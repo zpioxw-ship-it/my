@@ -1,0 +1,2072 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zpioxw — Local Shop Bazaar</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
+
+        :root {
+            --bg:#071828; --bg2:#0c2233; --bg3:#0f2d44;
+            --card:#0c2233; --border:#1e4060;
+            --text:#e0f2fe; --text2:#94c8e8; --muted:#8ab0c8;
+            --sky:#0ea5e9; --sky2:#38bdf8; --sky3:#7dd3fc;
+            --ok:#22c55e; --warn:#f59e0b; --err:#ef4444; --wa:#25d366;
+            --r:14px;
+        }
+        [data-theme="light"] {
+            --bg:#f8fafc; --bg2:#f0f9ff; --bg3:#e0f2fe;
+            --card:#ffffff; --border:#bae6fd;
+            --text:#0f172a; --text2:#1e3a5f; --muted:#475569;
+            --sky2:#0284c7; --sky3:#0369a1;
+        }
+
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+        body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;transition:background .3s,color .3s;}
+        input,select,button,textarea{font-family:'DM Sans',sans-serif;}
+        input{-webkit-appearance:none;}
+
+        /* ===== SETUP ===== */
+        #setup{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;}
+        
+        .setup-logo h1{font-family:'Playfair Display',serif;font-size:48px;color:var(--sky2);letter-spacing:2px;margin-bottom:6px;text-align:center;}
+        .setup-logo p{font-size:11px;color:var(--muted);letter-spacing:3px;text-align:center;}
+        .lang-lbl{color:var(--muted);font-size:13px;margin:20px 0 10px;text-align:center;}
+        .lang-row{display:flex;gap:10px;margin-bottom:20px;}
+        .lang-btn{padding:12px 18px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;min-width:95px;color:var(--text);font-size:13px;line-height:1.6;transition:all .2s;}
+        .lang-btn.active{border-color:var(--sky);background:var(--bg3);box-shadow:0 0 12px rgba(14,165,233,.2);}
+        .pin-wrap{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;}
+        .pin-lbl{font-size:12px;color:var(--muted);text-align:center;}
+        .pin-inp{padding:14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text);font-size:16px;outline:none;text-align:center;width:100%;transition:border .2s;}
+        .pin-inp:focus{border-color:var(--sky);}
+        .city-hint{color:var(--sky2);font-weight:700;font-size:14px;text-align:center;padding:8px;background:var(--bg3);border-radius:8px;border:1px solid var(--sky);display:none;}
+        .city-hint.show{display:block;}
+        .start-btn{padding:15px;background:var(--sky2);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:15px;transition:opacity .2s;width:100%;}
+        .start-btn:hover{opacity:.9;}
+        .skip-lnk{color:var(--muted);font-size:12px;cursor:pointer;text-align:center;margin-top:6px;}
+        .skip-lnk:hover{color:var(--sky2);}
+
+        /* ===== NAV ===== */
+        .nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 14px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
+        .brand-name{font-family:'Playfair Display',serif;font-size:20px;color:var(--sky2);cursor:pointer;letter-spacing:1px;}
+        .nav-icons{display:flex;gap:7px;}
+        .ni{width:36px;height:36px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:15px;transition:all .2s;}
+        .ni:hover,.ni.on{border-color:var(--sky);color:var(--sky);}
+
+        /* ===== VIEWS ===== */
+        .view{display:none;}
+        .view.on{display:block;}
+
+        /* ===== NAMEPLATE ===== */
+        .nameplate{padding:24px 14px 16px;text-align:center;background:linear-gradient(to bottom,var(--bg2),var(--bg));}
+        .np-badge{font-family:'Playfair Display',serif;font-size:26px;color:var(--text);letter-spacing:4px;border-bottom:2px solid var(--sky);display:inline-block;padding-bottom:4px;margin-bottom:8px;}
+        .np-cats{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+        .np-area{display:none;align-items:center;justify-content:center;gap:5px;margin-top:7px;font-size:12px;color:var(--sky2);font-weight:600;}
+        .np-area.show{display:flex;}
+
+        /* ===== SEARCH ===== */
+        .search-wrap{padding:10px 14px 4px;}
+        .search-box{display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--border);border-radius:24px;padding:9px 14px;}
+        .search-box:focus-within{border-color:var(--sky);}
+        .search-inp{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;}
+        .search-inp::placeholder{color:var(--muted);}
+        .s-clear{color:var(--muted);cursor:pointer;display:none;font-size:13px;}
+
+        /* ===== CAT TABS ===== */
+        .cat-scroll{display:flex;gap:10px;overflow-x:auto;padding:10px 14px 6px;scrollbar-width:none;}
+        .cat-scroll::-webkit-scrollbar{display:none;}
+        .ctab{padding:8px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;white-space:nowrap;font-size:13px;cursor:pointer;transition:all .2s;color:var(--muted);flex-shrink:0;}
+        .ctab.on{background:var(--sky);color:#fff;border-color:var(--sky);}
+
+        /* ===== PRODUCT GRID ===== */
+        .prod-grid{padding:14px;display:flex;flex-direction:column;gap:12px;}
+        .pcard{background:var(--card);border:1px solid var(--border);border-radius:18px;display:flex;overflow:hidden;position:relative;box-shadow:0 4px 6px rgba(0,0,0,.1);transition:all .2s;}
+        .pcard:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.2);}
+        .pcard.sel{border-color:var(--sky);}
+        .pcard.local-p{border-left:3px solid var(--warn);}
+        .p-img{width:110px;height:110px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;border-right:1px solid var(--border);overflow:hidden;}
+        .p-img img{width:100%;height:100%;object-fit:cover;}
+        .p-letter{font-family:'Playfair Display',serif;font-size:36px;font-weight:900;}
+        .p-localbadge{position:absolute;top:0;left:0;background:var(--warn);color:#071828;font-size:9px;padding:3px 8px;font-weight:800;border-radius:0 0 10px 0;}
+        .p-cdot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;}
+        .p-body{flex:1;padding:12px;display:flex;flex-direction:column;justify-content:space-between;}
+        .p-top{}
+        .p-name{font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px;}
+        .p-price{font-weight:700;color:var(--sky2);font-size:15px;margin-bottom:3px;}
+        .p-unit{font-size:11px;color:var(--muted);font-weight:400;}
+        .p-del{font-size:10px;margin-top:2px;}
+        .del-free{color:var(--ok);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;}
+        .del-paid{color:var(--warn);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;}
+        .p-shop{font-size:9px;color:var(--muted);font-style:italic;margin-top:2px;}
+        .p-bot{display:flex;align-items:center;justify-content:space-between;margin-top:6px;}
+        .p-sub{font-size:12px;color:var(--sky2);font-weight:700;}
+        .qty-row{display:flex;align-items:center;background:var(--bg3);border-radius:10px;border:1px solid var(--border);}
+        .qb{width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--sky2);user-select:none;transition:all .15s;}
+        .qb:active{transform:scale(.85);}
+        .qv{width:34px;text-align:center;font-size:14px;font-weight:700;color:var(--text);}
+        .sec-lbl{font-size:10px;font-weight:700;letter-spacing:.5px;margin:6px 0 4px;padding:3px 8px;border-radius:5px;display:inline-block;}
+        .sec-lbl.local{background:rgba(245,158,11,.15);color:var(--warn);}
+        .sec-lbl.other{background:var(--bg3);color:var(--muted);}
+        .empty{text-align:center;padding:40px 14px;color:var(--muted);}
+        .empty-icon{font-size:36px;margin-bottom:10px;}
+
+        /* ===== CART BAR ===== */
+        .cart-bar{position:fixed;bottom:0;left:0;right:0;background:var(--sky);padding:14px 20px;display:none;justify-content:space-between;align-items:center;color:#fff;z-index:1000;border-radius:20px 20px 0 0;box-shadow:0 -4px 15px rgba(0,0,0,.2);}
+        .cart-bar.show{display:flex;}
+        .cart-cnt{font-size:12px;opacity:.85;}
+        .cart-total{font-size:18px;font-weight:700;}
+        .cart-btn{background:#fff;color:var(--sky);border:none;padding:10px 20px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px;}
+
+        /* ===== ORDER MODAL ===== */
+        .mbg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+        .mbg.show{display:flex;}
+        .modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding-bottom:24px;}
+        .modal::-webkit-scrollbar{width:0;}
+        .mhandle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 12px;}
+        .mtitle{font-family:'Playfair Display',serif;font-size:18px;color:var(--text);padding:0 16px 12px;border-bottom:1px solid var(--border);}
+        .mbody{padding:14px 16px;}
+        .msec{margin-bottom:14px;}
+        .msec h4{font-size:11px;font-weight:700;color:var(--sky2);letter-spacing:.5px;margin-bottom:8px;text-transform:uppercase;}
+        .minfo{background:var(--bg3);border-radius:12px;padding:12px;font-size:13px;color:var(--text);line-height:1.8;}
+        .minfo.warn{border:1px solid rgba(245,158,11,.4);}
+        .medit{font-size:11px;color:var(--sky2);cursor:pointer;margin-top:5px;display:inline-block;}
+        .mrow{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px dashed var(--border);}
+        .mtotal{display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:var(--sky2);border-top:1px solid var(--border);padding-top:9px;margin-top:5px;}
+        .mbtn{width:100%;margin-top:9px;padding:14px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;}
+        .mbtn.wa{background:var(--wa);color:#fff;}
+        .mbtn.back{background:transparent;border:1.5px solid var(--border);color:var(--muted);margin-top:7px;}
+
+        /* ===== SIDE PANEL ===== */
+        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;}
+        .overlay.show{display:block;}
+        .side{position:fixed;top:0;right:-340px;width:320px;max-width:92vw;height:100vh;background:var(--bg2);border-left:1px solid var(--sky);z-index:210;overflow-y:auto;transition:right .3s ease;box-shadow:-4px 0 24px rgba(0,0,0,.4);}
+        .side.show{right:0;}
+        .side-top{padding:13px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+        .side-top h3{font-family:'Playfair Display',serif;font-size:16px;color:var(--sky2);}
+        .side-close{width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:15px;}
+        .avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--sky2));margin:16px auto 6px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#fff;}
+        .prof-name{text-align:center;font-size:16px;font-weight:700;}
+        .prof-sub{text-align:center;font-size:11px;color:var(--muted);margin-bottom:12px;}
+        .saved-card{background:var(--bg3);border-radius:12px;padding:12px;font-size:13px;color:var(--text);line-height:1.9;margin-bottom:10px;}
+        .edit-btn{width:100%;padding:11px;background:transparent;border:1.5px solid var(--sky);color:var(--sky2);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:12px;}
+        .pform{padding:0 14px;}
+        .pfield{margin-bottom:10px;}
+        .pfield label{display:block;font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
+        .pfield input,.pfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);border-radius:10px;padding:10px 13px;font-size:14px;outline:none;transition:border .2s;-webkit-appearance:none;}
+        .pfield input:focus,.pfield select:focus{border-color:var(--sky);}
+        .pin-city-lbl{font-size:11px;color:var(--sky2);font-weight:600;margin-top:4px;padding:4px 8px;background:var(--bg2);border-radius:6px;display:none;}
+        .pin-city-lbl.show{display:block;}
+        .save-btn{width:100%;padding:13px;background:var(--sky2);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;}
+        .psec{padding:10px 14px;border-top:1px solid var(--border);margin-top:10px;}
+        .psec h4{font-size:10px;font-weight:700;color:var(--sky2);letter-spacing:.5px;margin-bottom:8px;text-transform:uppercase;}
+        .psec-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--border);}
+        .psec-row:last-child{border:none;}
+        .psec-row span{font-size:13px;color:var(--text);}
+        .psec-row select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;outline:none;}
+        .my-order-card{background:var(--bg3);border-radius:10px;padding:9px 12px;margin-bottom:6px;}
+        .help-link{display:flex;align-items:center;gap:7px;padding:11px 14px;color:var(--sky2);font-size:13px;cursor:pointer;border-top:1px solid var(--border);}
+        .help-link:hover{background:var(--bg3);}
+
+        /* ===== PANEL (vendor/admin) ===== */
+        .panel-wrap{padding:14px;max-width:520px;margin:0 auto;padding-bottom:80px;}
+        .lock-scr{text-align:center;padding:40px 16px;}
+        .lock-scr h2{font-family:'Playfair Display',serif;font-size:22px;color:var(--sky2);margin-bottom:6px;}
+        .lock-scr p{color:var(--muted);font-size:13px;margin-bottom:20px;}
+        .pin-big{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);border-radius:12px;padding:14px;font-size:22px;text-align:center;letter-spacing:10px;outline:none;margin-bottom:12px;-webkit-appearance:none;}
+        .pin-big:focus{border-color:var(--sky);}
+        .ptabs{display:flex;border-radius:12px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px;}
+        .ptab{flex:1;padding:10px 4px;text-align:center;font-size:11px;font-weight:600;cursor:pointer;background:var(--card);color:var(--muted);transition:all .2s;}
+        .ptab.on{background:var(--sky);color:#fff;}
+        .bcnt{background:var(--warn);color:#fff;font-size:9px;border-radius:8px;padding:1px 5px;margin-left:2px;}
+        .stats-grid{display:flex;gap:8px;margin-bottom:14px;}
+        .sbox{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;}
+        .sn{font-size:22px;font-weight:700;color:var(--sky2);}
+        .sl{font-size:10px;color:var(--muted);margin-top:2px;}
+        .aform{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
+        .aform h3{font-family:'Playfair Display',serif;font-size:16px;color:var(--sky2);margin-bottom:13px;}
+        .afield{margin-bottom:10px;}
+        .afield label{display:block;font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
+        .afield input,.afield select,.afield textarea{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font-size:13px;outline:none;transition:border .2s;-webkit-appearance:none;}
+        .afield input:focus,.afield select:focus,.afield textarea:focus{border-color:var(--sky);}
+        .afield textarea{resize:vertical;min-height:60px;}
+        .frow{display:flex;gap:8px;}
+        .frow .afield{flex:1;}
+        .photo-up{border:2px dashed var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:10px;position:relative;overflow:hidden;transition:border .2s;}
+        .photo-up:hover{border-color:var(--sky);}
+        .photo-up input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+        .photo-prev{width:100%;height:88px;object-fit:cover;border-radius:8px;display:none;}
+        .photo-ph{color:var(--muted);font-size:12px;}
+        .photo-ph .icon{font-size:28px;margin-bottom:5px;}
+        .cpills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;}
+        .cp{padding:6px 14px;border-radius:14px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .2s;}
+        .cp.on{border-width:2px;}
+        .alist{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+        .arow{background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;overflow:hidden;transition:all .2s;}
+        .arow:hover{border-color:var(--sky);}
+        .arow-img{width:58px;height:58px;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;overflow:hidden;border-right:1px solid var(--border);}
+        .arow-img img{width:100%;height:100%;object-fit:cover;}
+        .arow-info{flex:1;padding:9px 11px;}
+        .arow-name{font-size:13px;font-weight:600;color:var(--text);}
+        .arow-det{font-size:10px;color:var(--muted);margin-top:2px;}
+        .arow-acts{display:flex;gap:5px;padding-right:10px;flex-shrink:0;}
+        .abtn{border-radius:8px;padding:6px 10px;font-size:10px;cursor:pointer;font-weight:600;border:none;transition:all .2s;}
+        .abtn.ok{background:rgba(34,197,94,.15);color:var(--ok);border:1px solid rgba(34,197,94,.3);}
+        .abtn.del{background:rgba(239,68,68,.15);color:var(--err);border:1px solid rgba(239,68,68,.3);}
+        .vcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px;margin-bottom:9px;}
+        .vcard-name{font-size:14px;font-weight:700;color:var(--sky2);}
+        .vcard-det{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5;}
+        .vcard-st{font-size:11px;font-weight:700;margin-top:6px;}
+        .vcard-acts{display:flex;gap:7px;margin-top:9px;}
+        .or-div{text-align:center;color:var(--muted);font-size:12px;margin:12px 0;position:relative;}
+        .or-div::before,.or-div::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--border);}
+        .or-div::before{left:0;}.or-div::after{right:0;}
+        .vinfo-box{background:var(--card);border:1.5px solid var(--sky);border-radius:14px;padding:13px;margin-bottom:13px;text-align:center;}
+        .my-pc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+        .my-pc-img{width:46px;height:46px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;overflow:hidden;flex-shrink:0;}
+        .my-pc-img img{width:100%;height:100%;object-fit:cover;}
+        .otbl{width:100%;border-collapse:collapse;font-size:11px;}
+        .otbl th{background:var(--bg2);color:var(--sky2);padding:8px;border:1px solid var(--border);text-align:left;font-weight:600;}
+        .otbl td{padding:8px;border:1px solid var(--border);color:var(--text);}
+        .otbl tr:nth-child(even) td{background:var(--bg);}
+        .pin-chg-box{background:var(--bg3);border:1px solid var(--sky);border-radius:12px;padding:14px;margin-bottom:13px;display:none;}
+        .pin-chg-box.show{display:block;}
+        .cat-mgr{display:flex;flex-direction:column;gap:8px;margin-bottom:13px;}
+        .citem{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 13px;display:flex;align-items:center;gap:10px;}
+        .citem-color{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+        .citem-name{flex:1;font-size:13px;font-weight:700;}
+        .swatches{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px;}
+        .sw{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .2s;}
+        .sw.on{border-color:#fff;transform:scale(1.15);}
+
+        /* ===== TOAST ===== */
+        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(70px);padding:11px 24px;border-radius:30px;font-size:13px;font-weight:600;opacity:0;transition:all .4s cubic-bezier(.18,.89,.32,1.28);z-index:9999;pointer-events:none;white-space:nowrap;max-width:88vw;}
+        .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+        .toast.ok{background:var(--ok);color:#fff;}
+        .toast.err{background:var(--err);color:#fff;}
+        .toast.info{background:var(--sky);color:#fff;}
+
+        /* ===== RESPONSIVE ===== */
+        @media(min-width:768px){
+            .nav{padding:10px 10%;}
+            .prod-grid{display:grid;grid-template-columns:1fr 1fr;max-width:900px;margin:0 auto;gap:16px;}
+            .panel-wrap{max-width:600px;padding:20px 32px;}
+            .cart-bar{padding:14px 10%;}
+        }
+    
+/* OFFER BADGE + BAR */
+.p-offer-wrap{margin-top:4px;}
+.p-offer-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.p-offer-badge{background:linear-gradient(135deg,#ff4444,#ff6b35);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;}
+.p-offer-orig{font-size:10px;color:var(--muted);text-decoration:line-through;}
+.p-offer-name{font-size:9px;color:#ff6b35;font-weight:700;background:rgba(255,107,53,.12);border:1px solid rgba(255,107,53,.3);border-radius:6px;padding:1px 6px;}
+.p-offer-bar-wrap{height:4px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden;}
+.p-offer-bar{height:100%;background:linear-gradient(90deg,#ff4444,#ff6b35);border-radius:2px;transition:width .5s ease;}
+/* SHOP NAME BELOW PRODUCT */
+.p-shopname{font-size:10px;color:var(--muted);margin-top:3px;font-style:italic;letter-spacing:.2px;}
+/* STARS */
+.p-stars{display:flex;gap:1px;margin-top:3px;align-items:center;}
+.star{font-size:11px;color:#ffd700;}
+.star.empty{color:var(--border);}
+
+
+/* PRODUCT DETAIL MODAL */
+.pd-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:none;align-items:flex-end;justify-content:center;}
+.pd-bg.show{display:flex;}
+.pd-modal{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding-bottom:24px;}
+.pd-modal::-webkit-scrollbar{width:0;}
+.pd-img-big{width:100%;height:200px;background:var(--bg3);display:flex;align-items:center;justify-content:center;border-radius:20px 20px 0 0;overflow:hidden;position:relative;}
+.pd-img-big img{width:100%;height:100%;object-fit:cover;}
+.pd-img-letter{font-family:'Playfair Display',serif;font-size:72px;font-weight:900;}
+.pd-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:none;}
+.pd-body{padding:16px;}
+.pd-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.pd-price-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.pd-price{font-size:22px;font-weight:900;color:var(--sky2);}
+.pd-orig{font-size:14px;color:var(--muted);text-decoration:line-through;}
+.pd-off{background:linear-gradient(135deg,#ff4444,#ff6b35);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;}
+.pd-shop{font-size:12px;color:var(--muted);font-style:italic;margin-bottom:10px;}
+.pd-del-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:10px;}
+.pd-del-free{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:var(--ok);}
+.pd-del-paid{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--warn);}
+.pd-desc{font-size:13px;color:var(--text2);line-height:1.7;background:var(--bg3);border-radius:10px;padding:11px;margin-bottom:12px;}
+.pd-stars-big{display:flex;gap:3px;align-items:center;margin-bottom:10px;}
+.pd-star{font-size:18px;color:#ffd700;}
+.pd-star.e{color:var(--border);}
+.pd-offer-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:12px;}
+.pd-offer-fill{height:100%;background:linear-gradient(90deg,#ff4444,#ff6b35);border-radius:3px;}
+.pd-qty-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.pd-qb{width:40px;height:40px;border-radius:10px;background:var(--bg3);border:1.5px solid var(--border);color:var(--text);font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+.pd-qb:hover{background:var(--sky);color:#fff;border-color:var(--sky);}
+.pd-qv{flex:1;text-align:center;font-size:22px;font-weight:700;color:var(--sky2);}
+.pd-add-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--sky),var(--sky2));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;}
+
+
+/* HAMBURGER MENU */
+.ham-item{padding:13px 20px;font-size:14px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .2s;}
+.ham-item:hover{background:var(--bg3);color:var(--sky2);}
+#hamMenu.open{right:0;}
+
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ===== SETUP SCREEN ===== -->
+<div id="setup">
+    <div class="setup-logo">
+        <h1>Zpioxw</h1>
+        <p>LOCAL SHOP BAZAAR</p>
+    </div>
+    <div class="lang-lbl" id="lLang">Bhasha Chunein</div>
+    <div class="lang-row">
+        <div class="lang-btn active" data-l="hi" onclick="setLang('hi',this)">&#127470;&#127475;<br><small>Hinglish</small></div>
+        <div class="lang-btn" data-l="en" onclick="setLang('en',this)">&#127468;&#127463;<br><small>English</small></div>
+        <div class="lang-btn" data-l="local" onclick="setLang('local',this)">&#128205;<br><small>Hindi</small></div>
+    </div>
+    <div class="pin-wrap">
+        <div class="pin-lbl" id="lPin">Apna Pincode Daalen (Optional)</div>
+        <input class="pin-inp" type="tel" id="setupPin" maxlength="6" placeholder="Jaise: 110001" oninput="onSetupPin(this.value)" onkeydown="if(event.key==='Enter')startApp()">
+        <div class="city-hint" id="cityHint"></div>
+        <button class="start-btn" onclick="startApp()" id="lStart">Shop Kholiey</button>
+        <div class="skip-lnk" onclick="startApp()">Abhi nahi, baad mein</div>
+    </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app" style="display:none;">
+
+    <!-- NAV -->
+    <nav class="nav">
+  <h1 class="brand-name" onclick="showView('shop')">Zpioxw</h1>
+  <div class="nav-icons">
+    <div class="ni" onclick="openProfile()" title="Profile">&#128100;</div>
+    <div class="ni" onclick="doShare()" title="Share">&#128279;</div>
+    <div class="ni" onclick="showView('admin')" title="Admin">&#128272;</div>
+    <div class="ni" onclick="toggleHamburger()" id="hamBtn" title="Menu" style="font-size:18px;font-weight:700;letter-spacing:-1px;">&#9776;</div>
+  </div>
+</nav>
+<!-- HAMBURGER MENU -->
+<div id="hamOverlay" onclick="closeHamburger()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8999;display:none;"></div>
+<div id="hamMenu" style="position:fixed;top:0;right:-240px;width:230px;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:9000;transition:right .3s ease;padding:20px 0;box-shadow:-4px 0 20px rgba(0,0,0,.4);">
+  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <div style="font-family:'Playfair Display',serif;font-size:16px;color:var(--sky2);">Zpioxw</div>
+    <div onclick="closeHamburger()" style="cursor:pointer;color:var(--muted);font-size:18px;">&#10005;</div>
+  </div>
+  <div class="ham-item" onclick="showView('shop');closeHamburger();">&#127978; Shop</div>
+  <div class="ham-item" onclick="showView('vendor');closeHamburger();">&#127981; My Shop</div>
+  <div class="ham-item" id="hamTheme" onclick="toggleTheme()">&#9790; Dark Mode</div>
+  <div class="ham-item" onclick="doShare()">&#128279; Share App</div>
+  <div style="margin:10px 0;border-top:1px solid var(--border);"></div>
+  <div class="ham-item" onclick="openProfile();closeHamburger();">&#128100; Profile</div>
+  <div class="ham-item" onclick="showView('admin');closeHamburger();">&#128272; Admin</div>
+</div>
+
+    <!-- OVERLAY & PROFILE PANEL -->
+    <div class="overlay" id="overlay" onclick="closeProfile()"></div>
+    <div class="side" id="sidePanel">
+        <div class="side-top">
+            <h3>&#128100; Profile</h3>
+            <div class="side-close" onclick="closeProfile()">&#10005;</div>
+        </div>
+        <div class="avatar" id="spAv">?</div>
+        <div class="prof-name" id="spName">Aapka Naam</div>
+        <div class="prof-sub" id="spSub">Details bharo, order ke liye</div>
+
+        <!-- SAVED VIEW -->
+        <div id="profSaved" style="display:none;padding:0 14px;">
+            <div class="saved-card" id="profSavedDet"></div>
+            <button class="edit-btn" onclick="showProfEdit()">&#9998; Edit Karein</button>
+        </div>
+
+        <!-- EDIT FORM -->
+        <div class="pform" id="profEdit">
+            <div class="pfield">
+              <label id="lName">NAAM</label>
+              <input id="cName" type="text" placeholder="Aapka poora naam" oninput="onNameInp(this.value)"/>
+            </div>
+            <div class="pfield">
+              <label id="lPhone">PHONE NUMBER</label>
+              <input id="cPhone" type="tel" placeholder="+91 98765 43210"/>
+            </div>
+            <div class="pfield">
+              <label>AREA PINCODE</label>
+              <input id="cPin" type="tel" maxlength="6" placeholder="110001" oninput="onProfPin(this.value)"/>
+              <!-- Flipkart style city detect -->
+              <div id="profPinCity" style="display:none;margin-top:6px;background:var(--bg3);border:1px solid var(--sky);border-radius:8px;padding:8px 12px;">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">DETECTED LOCATION</div>
+                <div id="profPinCityTxt" style="font-size:13px;font-weight:700;color:var(--sky2);"></div>
+              </div>
+            </div>
+            <div class="pfield">
+              <label id="lAddr">GHAR KA PATA (optional)</label>
+              <input id="cAddr" type="text" placeholder="House no., Street, Area..."/>
+            </div>
+            <button class="save-btn" onclick="saveProfileAndGo()">&#128190; Save &amp; Shop Kholiey &#8594;</button>
+        </div>
+
+        <div class="psec">
+            <h4>Settings</h4>
+            <div class="psec-row">
+                <span>&#127760; Bhasha</span>
+                <select id="langSel" onchange="changeLang(this.value)">
+                    <option value="hi">Hinglish</option>
+                    <option value="en">English</option>
+                    <option value="local">Hindi</option>
+                </select>
+            </div>
+            <div class="psec-row">
+                <span>Theme</span>
+                <div class="ni" onclick="toggleTheme()" id="spTheme">&#9790;</div>
+            </div>
+        </div>
+        <div class="psec">
+            <h4>Mere Orders</h4>
+            <div id="spOrders" style="font-size:12px;color:var(--muted);">Koi order nahi abhi.</div>
+        </div>
+        <div class="help-link" onclick="window.open('mailto:zpioxw@gmail.com')">&#128231; <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="057f756c6a7d72456268646c692b666a68">[email&#160;protected]</a></div>
+        <div class="help-link" id="helpWA">&#128172; WhatsApp Support</div>
+    </div>
+
+    <!-- ORDER MODAL -->
+    <div class="mbg" id="orderModal">
+        <div class="modal">
+            <div class="mhandle"></div>
+            <div class="mtitle">Order Confirm Karein</div>
+            <div class="mbody">
+                <div class="msec">
+                    <h4>Aapki Jankari</h4>
+                    <div id="mCustInfo" class="minfo"></div>
+                    <div class="medit" onclick="closeModal();openProfile();">&#9998; Details edit karein</div>
+                </div>
+                <div class="msec">
+                    <h4>Order</h4>
+                    <div id="mRows"></div>
+                    <div class="mtotal"><span>Total</span><span id="mTotal">Rs.0</span></div>
+                </div>
+                <button class="mbtn wa" onclick="sendWA()">&#128242; WhatsApp pe Order Bhejo</button>
+                <button class="mbtn back" onclick="closeModal()">&#8592; Wapas Jaao</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHOP VIEW -->
+    <div class="view on" id="view-shop">
+        <div class="nameplate">
+            <div class="np-badge">ZPIOXW</div>
+            <div class="np-cats" id="npCats">Kirana | Cosmetics | Wear | Services</div>
+            <div class="np-area" id="npArea"><span>&#128205;</span><span id="npAreaTxt"></span></div>
+        </div>
+        <!-- DUKAAN BUTTON — simple floating button -->
+        <div style="text-align:center;padding:6px 14px 0;">
+          <button onclick="showView('vendor')" style="background:transparent;border:1.5px solid var(--sky);color:var(--sky2);border-radius:20px;padding:7px 20px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">
+            &#127978; My Shop
+          </button>
+        </div>
+        <div class="search-wrap">
+            <div class="search-box">
+                <span style="color:var(--muted);font-size:15px;">&#128269;</span>
+                <input class="search-inp" id="searchInp" type="text" placeholder="Product ya dukaan dhundho..." oninput="doSearch(this.value)"/>
+                <span class="s-clear" id="sClear" onclick="clearSearch()">&#10005;</span>
+            </div>
+        </div>
+        <div class="cat-scroll" id="catTabs"><div class="ctab on" onclick="filterCat('all',this)">Sab</div></div>
+        <div class="prod-grid" id="prodGrid">
+            <div class="empty"><div class="empty-icon">&#8987;</div><div>Products load ho rahe hain...</div></div>
+        </div>
+        <div style="height:75px;"></div>
+    </div>
+
+    <!-- VENDOR VIEW -->
+    <div class="view" id="view-vendor">
+        <div class="panel-wrap">
+            <div id="vLock">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <button onclick="showView('shop')" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">&#8592; Shop Wapas</button>
+    <span style="font-size:12px;color:var(--sky2);font-weight:700;">My Shop</span>
+  </div>
+
+  <!-- TABS -->
+  <div style="display:flex;background:var(--bg3);border-radius:14px;padding:4px;margin-bottom:18px;">
+    <div id="vTabLogin" onclick="vSwitchTab('login')" style="flex:1;padding:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;background:var(--sky);color:#fff;border-radius:10px;transition:all .2s;">Login</div>
+    <div id="vTabReg" onclick="vSwitchTab('reg')" style="flex:1;padding:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);border-radius:10px;transition:all .2s;">Nayi Dukaan</div>
+  </div>
+
+  <!-- ===== LOGIN ===== -->
+  <div id="vLoginForm">
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:42px;margin-bottom:8px;">&#127978;</div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--sky2);">Apni Dukaan Kholiey</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Koi password nahi — sirf phone number</div>
+    </div>
+    <div class="afield">
+      <label>REGISTERED PHONE NUMBER</label>
+      <input id="vLPhone" type="tel" placeholder="+91 98765 43210" oninput="onVPhoneInput(this.value)" style="font-size:16px;letter-spacing:1px;"/>
+    </div>
+
+    <!-- DUPLICATE ACCOUNT SELECTOR -->
+    <div id="vDupBox" style="display:none;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--sky2);font-weight:700;margin-bottom:8px;">&#128269; Iss phone pe ek se zyada account mila — apna chunein:</div>
+      <div id="vDupList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <button class="save-btn" onclick="vendorLoginSimple()" style="font-size:15px;padding:14px;">&#127978; Dukaan Kholiey</button>
+
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted);">
+      Naya account? <span onclick="vSwitchTab('reg')" style="color:var(--sky2);cursor:pointer;font-weight:700;">Yahan register karein</span>
+    </div>
+  </div>
+
+  <!-- ===== REGISTER ===== -->
+  <div id="vRegForm" style="display:none;">
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:42px;margin-bottom:8px;">&#10024;</div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--sky2);">Nayi Dukaan Register Karein</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Koi password nahi chahiye! Admin approve karega.</div>
+    </div>
+
+    <!-- PHONE — check duplicate live -->
+    <div class="afield">
+      <label>PHONE NUMBER</label>
+      <input id="vRPhone" type="tel" placeholder="+91 98765 43210" oninput="checkDuplicate(this.value)"/>
+      <!-- Duplicate warning -->
+      <div id="vDupWarn" style="display:none;margin-top:6px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 10px;">
+        <div style="font-size:11px;color:var(--warn);font-weight:700;margin-bottom:5px;">&#9888; Iss phone pe pehle se account hai:</div>
+        <div id="vDupWarnList" style="font-size:11px;color:var(--text2);"></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:5px;">Phir bhi naya account banana chahte ho? Neeche fill karo — dono dikhenge login mein.</div>
+      </div>
+    </div>
+
+    <div class="afield">
+      <label>DUKAAN KA NAAM</label>
+      <input id="vRShop" type="text" placeholder="Jaise: Sharma Kirana Store"/>
+    </div>
+    <div class="afield">
+      <label>AAPKA NAAM (Real naam — yahi account name banega)</label>
+      <input id="vROwner" type="text" placeholder="Aapka poora naam likhein"/>
+    </div>
+    <div class="afield">
+      <label>EMAIL (optional — admin se contact ke liye)</label>
+      <input id="vREmail" type="email" placeholder="aapka@email.com"/>
+    </div>
+    <div class="afield">
+      <label>AREA PINCODE</label>
+      <input id="vRPin6" type="tel" maxlength="6" placeholder="396235" oninput="onVRegPin(this.value)"/>
+      <div class="pin-city-lbl" id="vRegCity"></div>
+    </div>
+    <div class="afield">
+      <label>KYA BECHTE HO?</label>
+      <select id="vRType">
+        <option value="Kirana">&#127811; Kirana / Grocery</option>
+        <option value="Cosmetics">&#128132; Cosmetics / Beauty</option>
+        <option value="Wear">&#128248; Kapde / Wear</option>
+        <option value="Services">&#128295; Services</option>
+        <option value="Mixed">&#127881; Sab kuch / Mixed</option>
+        <option value="Food">&#127829; Food / Restaurant</option>
+        <option value="Electronics">&#128241; Electronics</option>
+        <option value="Other">&#128218; Kuch aur</option>
+      </select>
+    </div>
+
+    <button class="save-btn" onclick="vendorRegister()" style="font-size:15px;padding:14px;margin-top:4px;">&#128228; Register Karein (Free)</button>
+    <p style="text-align:center;font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6;">Submit ke baad admin approve karega<br/>Aapko notification milega jab approve ho</p>
+  </div>
+
+  <!-- ===== PENDING NOTIFICATION ===== -->
+  <div id="vPendingBox" style="display:none;margin-top:14px;background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(245,158,11,.05));border:1.5px solid rgba(245,158,11,.4);border-radius:14px;padding:16px;text-align:center;">
+    <div style="font-size:36px;margin-bottom:8px;">&#9203;</div>
+    <div style="font-family:'Playfair Display',serif;font-size:16px;color:var(--warn);margin-bottom:6px;">Request Pending Hai</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7;" id="vPendingMsg">Aapki dukaan ki request admin ke paas gayi hai.<br/>Approve hone par yahan notification aayega.</div>
+    <div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:10px;">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">AAPKA REQUEST ID</div>
+      <div style="font-size:13px;font-weight:700;color:var(--sky2);" id="vPendingId"></div>
+    </div>
+    <button onclick="checkApprovalStatus()" style="margin-top:12px;padding:9px 20px;background:transparent;border:1.5px solid var(--sky);color:var(--sky2);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">&#8635; Status Check Karein</button>
+  </div>
+
+  <!-- SUCCESS REGISTER -->
+  <div id="vRegSuccess" style="display:none;text-align:center;padding:20px;">
+    <div style="font-size:52px;margin-bottom:10px;">&#9989;</div>
+    <div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--ok);margin-bottom:8px;">Request Submit Ho Gayi!</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:14px;">Admin aapki dukaan approve karega.<br/>Yahan wapas aa ke Login karein tab approve ho jaye.</div>
+    <button onclick="vSwitchTab('login')" style="padding:12px 28px;background:var(--sky);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Login Page Pe Jaao</button>
+  </div>
+</div>
+
+
+            <div id="vPanel" style="display:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+                    <div style="font-family:'Playfair Display',serif;font-size:17px;color:var(--sky2);" id="vTitle">Meri Dukaan</div>
+                    <button class="abtn del" onclick="vendorLogout()">Logout</button>
+                </div>
+                <div class="vinfo-box" id="vInfoBox"></div>
+                <div class="ptabs">
+                    <div class="ptab on" id="vt1" onclick="vTab(1)">&#128230; Products</div>
+                    <div class="ptab" id="vt2" onclick="vTab(2)">&#43; Add</div>
+                </div>
+                <div id="vMyProds"><div id="myProdList"></div></div>
+                <div id="vAddProd" style="display:none;">
+                    <div class="aform">
+                        <h3>&#43; Naya Product</h3>
+                        <p style="font-size:11px;color:var(--warn);margin-bottom:10px;">Admin approval ke baad customers ko dikhega</p>
+                        <div class="photo-up"><input type="file" accept="image/*" id="vPhIn" onchange="prevPhoto('vPhPrev','vPhPh',event,'v')"/><img class="photo-prev" id="vPhPrev"/><div class="photo-ph" id="vPhPh"><div class="icon">&#128247;</div><div>Photo tap karke add karein (optional)</div></div></div>
+                        <div class="afield"><label>CATEGORY</label><div class="cpills" id="vCpills"></div></div>
+                        <div class="afield"><label>NAAM</label><input id="vNName" type="text" placeholder="Product naam"/></div>
+                        <div class="afield"><label>DESCRIPTION (optional)</label><textarea id="vNDesc" placeholder="Thodi jankari..."></textarea></div>
+                        <div class="frow">
+                            <div class="afield"><label>PRICE (Rs.)</label><input id="vNPrice" type="number" placeholder="200"/></div>
+                            <div class="afield"><label>DELIVERY (Rs.)</label><input id="vNDel" type="number" value="0"/></div>
+                        </div>
+                        <div class="afield"><label>UNIT</label><select id="vNUnit"><option value="piece">Per Piece</option><option value="kg">Per KG</option><option value="litre">Per Litre</option><option value="service">Per Service</option><option value="hour">Per Hour</option><option value="set">Per Set</option><option value="bottle">Per Bottle</option><option value="dozen">Per Dozen</option></select></div>
+                        <div class="frow">
+                          <div class="afield"><label>OFFER % (optional)</label><input id="vNOffer" type="number" min="0" max="90" value="0" placeholder="Jaise: 10"/></div>
+                          <div class="afield"><label>OFFER NAME</label><input id="vNOfferName" type="text" placeholder="Sale, Offer..."/></div>
+                        </div>
+                        <button class="save-btn" style="margin-top:7px;" onclick="vendorAddProd()">&#128228; Submit for Approval</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div class="view" id="view-admin">
+        <div class="panel-wrap">
+            <div id="adminLock" class="lock-scr">
+                <div style="font-size:46px;margin-bottom:10px;">&#128272;</div>
+                <h2>Admin Login</h2>
+                <p>Sirf authorized access</p>
+                <input class="pin-big" id="pinInp" type="password" maxlength="6" placeholder="••••••" onkeydown="if(event.key==='Enter')checkAdminPin()"/>
+                <button class="save-btn" onclick="checkAdminPin()">Login</button>
+                <div style="margin-top:12px;">
+                  <span style="font-size:12px;color:var(--muted);">PIN bhool gaye? </span>
+                  <span onclick="showAdminForgot()" style="font-size:12px;color:var(--sky2);cursor:pointer;font-weight:600;">Email se recover karein</span>
+                </div>
+                <!-- FORGOT PIN FORM -->
+                <div id="adminForgotBox" style="display:none;margin-top:14px;background:var(--bg3);border:1px solid var(--sky);border-radius:12px;padding:14px;text-align:left;">
+                  <div style="font-size:13px;font-weight:700;color:var(--sky2);margin-bottom:8px;">&#128231; PIN Recovery</div>
+                  <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Woh email daalen jo admin profile mein save hai</div>
+                  <input id="forgotEmail" type="email" placeholder="zpioxw@gmail.com" style="width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-size:13px;outline:none;margin-bottom:8px;"/>
+                  <button onclick="recoverAdminPin()" style="width:100%;padding:10px;background:var(--sky);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">PIN Send Karein</button>
+                </div>
+            </div>
+            <div id="adminPanel" style="display:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+                    <div>
+                        <div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--sky2);">&#128081; Admin Panel</div>
+                        <div id="aOwner" style="font-size:11px;color:var(--muted);margin-top:2px;"></div>
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <div class="ni" onclick="refreshAdmin()" title="Refresh" style="font-size:16px;">&#8635;</div>
+                        <div class="ni" onclick="togglePinChg()" style="font-size:14px;">&#128273;</div>
+                        <button class="abtn del" onclick="adminLogout()">Logout</button>
+                    </div>
+                </div>
+                <!-- PIN CHANGE -->
+                <div class="pin-chg-box" id="pinChgBox">
+                    <div style="font-size:13px;font-weight:700;color:var(--sky2);margin-bottom:10px;">&#128273; PIN Change Karein</div>
+                    <div class="afield"><label>PURANA PIN</label><input id="oldPin" type="password" maxlength="6" placeholder="••••••"/></div>
+                    <div class="afield"><label>NAYA PIN</label><input id="newPin" type="password" maxlength="6" placeholder="••••••"/></div>
+                    <div class="afield"><label>CONFIRM PIN</label><input id="cfmPin" type="password" maxlength="6" placeholder="••••••"/></div>
+                    <div style="display:flex;gap:8px;margin-top:6px;">
+                        <button onclick="changeAdminPin()" style="flex:1;padding:11px;background:var(--sky);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">Change Karein</button>
+                        <button onclick="togglePinChg()" style="padding:11px 16px;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:10px;cursor:pointer;font-size:12px;">Cancel</button>
+                    </div>
+                </div>
+                <div class="stats-grid" id="aStats"></div>
+                <div class="ptabs" style="font-size:11px;">
+                    <div class="ptab on" id="at1" onclick="aTab(1)">Products</div>
+                    <div class="ptab" id="at2" onclick="aTab(2)">Shops<span class="bcnt" id="vBadge">0</span></div>
+                    <div class="ptab" id="at3" onclick="aTab(3)">Orders</div>
+                    <div class="ptab" id="at4" onclick="aTab(4)">Category</div>
+                    <div class="ptab" id="at5" onclick="aTab(5)">&#43; Add</div>
+                </div>
+                <div id="aProds">
+                    <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;align-items:center;flex-wrap:wrap;">
+                        <div class="ctab on" style="font-size:11px;" data-af="all" onclick="aFilter('all',this)">Sab</div>
+                        <div class="ctab" style="font-size:11px;" data-af="pending" onclick="aFilter('pending',this)">Pending</div>
+                        <div class="ctab" style="font-size:11px;" data-af="live" onclick="aFilter('live',this)">Live</div>
+                    </div>
+                    <!-- BULK ACTIONS -->
+                    <div id="bulkProdBar" style="display:none;background:var(--bg3);border:1px solid var(--sky);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                      <span style="font-size:12px;color:var(--sky2);flex:1;" id="bulkProdCount">0 select</span>
+                      <button onclick="bulkApproveProds()" style="padding:7px 14px;background:var(--ok);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">&#9989; Sab Approve</button>
+                      <button onclick="bulkDeleteProds()" style="padding:7px 14px;background:var(--err);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">&#128465; Sab Delete</button>
+                      <button onclick="clearProdSel()" style="padding:7px 10px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;font-size:12px;cursor:pointer;">Cancel</button>
+                    </div>
+                    <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">&#9432; Product ke box pe tap karo select karne ke liye</div>
+                    <div class="alist" id="aProdList"></div>
+                </div>
+                <div id="aShops" style="display:none;"><div id="aShopList"></div></div>
+                <div id="aOrders" style="display:none;"><div id="aOrderList"></div></div>
+                <div id="aCats" style="display:none;">
+                    <div class="cat-mgr" id="catMgrList"></div>
+                    <div class="aform">
+                        <h3>&#43; Nayi Category</h3>
+                        <div class="afield"><label>NAAM</label><input id="newCatName" type="text" placeholder="Electronics, Food, Dairy..."/></div>
+                        <div class="afield"><label>RANG CHUNEIN</label><div class="swatches" id="colorSw"></div></div>
+                        <button class="save-btn" onclick="addCategory()">Category Add Karein</button>
+                    </div>
+                </div>
+                <div id="aAdd" style="display:none;">
+                    <div class="aform">
+                        <h3>&#43; Product Add (Direct Live)</h3>
+                        <div class="photo-up"><input type="file" accept="image/*" id="aPhIn" onchange="prevPhoto('aPhPrev','aPhPh',event,'a')"/><img class="photo-prev" id="aPhPrev"/><div class="photo-ph" id="aPhPh"><div class="icon">&#128247;</div><div>Photo tap karke add karein</div></div></div>
+                        <div class="afield"><label>CATEGORY</label><div class="cpills" id="aCpills"></div></div>
+                        <div class="afield"><label>NAAM</label><input id="aNName" type="text" placeholder="Product naam"/></div>
+                        <div class="frow">
+                            <div class="afield"><label>PRICE (Rs.)</label><input id="aNPrice" type="number" placeholder="100"/></div>
+                            <div class="afield"><label>DELIVERY (Rs.)</label><input id="aNDel" type="number" value="0"/></div>
+                        </div>
+                        <div class="afield"><label>UNIT</label><select id="aNUnit"><option value="piece">Per Piece</option><option value="kg">Per KG</option><option value="litre">Per Litre</option><option value="service">Per Service</option><option value="hour">Per Hour</option><option value="set">Per Set</option><option value="bottle">Per Bottle</option><option value="dozen">Per Dozen</option></select></div>
+                        <div class="frow">
+                          <div class="afield"><label>OFFER % (0 = no offer)</label><input id="aNOffer" type="number" min="0" max="90" value="0" placeholder="Jaise: 10"/></div>
+                          <div class="afield"><label>OFFER NAME (optional)</label><input id="aNOfferName" type="text" placeholder="Holi Sale, New Stock..."/></div>
+                        </div>
+                        <div class="afield"><label>STAR RATING (0-5)</label>
+                          <div style="display:flex;gap:10px;align-items:center;margin-top:4px;">
+                            <input id="aNRating" type="range" min="0" max="5" step="0.5" value="0" oninput="updateStarPreview('aNRating','aNRatingPrev')" style="flex:1;"/>
+                            <div id="aNRatingPrev" style="font-size:12px;color:var(--sky2);font-weight:700;min-width:20px;">0</div>
+                          </div>
+                        </div>
+                        <button class="save-btn" style="margin-top:7px;" onclick="adminAddProd()">Add Karein (Live)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PRODUCT DETAIL MODAL -->
+<div class="pd-bg" id="pdModal">
+  <div class="pd-modal">
+    <div class="pd-img-big" id="pdImg">
+      <button class="pd-close" onclick="closePdModal()">&#10005;</button>
+    </div>
+    <div class="pd-body">
+      <div class="pd-name" id="pdName"></div>
+      <div class="pd-price-row">
+        <div class="pd-price" id="pdPrice"></div>
+        <div class="pd-orig" id="pdOrig" style="display:none;"></div>
+        <div class="pd-off" id="pdOff" style="display:none;"></div>
+      </div>
+      <div id="pdOfferName" style="font-size:11px;color:#ff6b35;font-weight:700;margin-bottom:6px;display:none;"></div>
+      <div class="pd-offer-bar" id="pdOfferBar" style="display:none;">
+        <div class="pd-offer-fill" id="pdOfferFill"></div>
+      </div>
+      <div id="pdStars" style="margin-bottom:10px;"></div>
+      <div id="pdDel" class="pd-del-badge"></div>
+      <div class="pd-shop" id="pdShop" style="margin-top:6px;"></div>
+      <div class="pd-desc" id="pdDesc" style="display:none;"></div>
+      <!-- QTY -->
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;">QUANTITY</div>
+      <div class="pd-qty-row">
+        <div class="pd-qb" id="pdMinus" onclick="pdChg(-1)">&#8722;</div>
+        <div class="pd-qv" id="pdQty">0</div>
+        <div class="pd-qb" id="pdPlus" onclick="pdChg(1)">+</div>
+        <div style="font-size:12px;color:var(--muted);" id="pdUnit"></div>
+      </div>
+      <div style="font-size:13px;color:var(--sky2);font-weight:700;margin-bottom:10px;" id="pdSubtotal"></div>
+      <button class="pd-add-btn" onclick="pdAddAndClose()" id="pdAddBtn">Cart mein Add Karein</button>
+    </div>
+  </div>
+</div>
+<!-- CART BAR -->
+<div class="cart-bar" id="cartBar">
+    <div>
+        <div class="cart-cnt" id="cartCnt">0 items</div>
+        <div class="cart-total" id="cartTotal">Rs. 0</div>
+    </div>
+    <button class="cart-btn" onclick="openModal()">Order Karo &#8594;</button>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const API  = 'https://script.google.com/macros/s/AKfycbzfZYHTHZXh5rXOwoHmeb6kRiM04NeO1dGsQaPXzM0ExyNNTbckmxhFpCFV16o-Z4M8KA/exec';
+const SHOP = 'Zpioxw';
+const DPIN = '1234';
+
+// PIN MAP — 300+ cities
+const PM = {
+  // ── DELHI ──
+  '110001':'Connaught Place, New Delhi','110002':'Darya Ganj, Delhi','110003':'Lodi Colony, Delhi','110004':'Palam, Delhi','110005':'Karol Bagh, Delhi','110006':'Paharganj, Delhi','110007':'Rajinder Nagar, Delhi','110008':'Patel Nagar, Delhi','110009':'Sadar Bazar, Delhi','110010':'Tilak Nagar, Delhi','110011':'Lajpat Nagar, Delhi','110012':'Safdarjung, Delhi','110013':'Okhla, Delhi','110014':'Jangpura, Delhi','110015':'Hari Nagar, Delhi','110016':'South Ex, Delhi','110017':'Hauz Khas, Delhi','110018':'Janakpuri, Delhi','110019':'Kalkaji, Delhi','110020':'Saket, Delhi','110021':'Vasant Kunj, Delhi','110022':'Vasant Vihar, Delhi','110023':'Munirka, Delhi','110024':'Defence Colony, Delhi','110025':'Greater Kailash, Delhi','110026':'Mehrauli, Delhi','110027':'Najafgarh, Delhi','110028':'West Delhi','110029':'Chanakyapuri, Delhi','110030':'Chattarpur, Delhi','110031':'Shahdara East, Delhi','110032':'Seelampur, Delhi','110033':'Burari, Delhi','110034':'Pitampura, Delhi','110035':'Wazirabad, Delhi','110036':'Alipur, Delhi','110037':'Bijwasan, Delhi','110040':'Dwarka Mor, Delhi','110041':'Dwarka Sec 6, Delhi','110042':'Nangloi, Delhi','110043':'Bindapur, Delhi','110044':'Dwarka, Delhi','110045':'Palam Village, Delhi','110046':'Chhawla, Delhi','110047':'Sarojini Nagar, Delhi','110048':'Lado Sarai, Delhi','110049':'Malviya Nagar, Delhi','110051':'Yamuna Vihar, Delhi','110052':'Wazirpur, Delhi','110053':'Shalimar Bagh, Delhi','110054':'Civil Lines, Delhi','110055':'Paharganj New, Delhi','110056':'Trilokpuri, Delhi','110057':'Vasant Enclave, Delhi','110058':'Vikaspuri, Delhi','110059':'Uttam Nagar, Delhi','110060':'Moti Nagar, Delhi','110061':'Naraina, Delhi','110062':'Chhatarpur Delhi','110063':'Palam New, Delhi','110064':'Tagore Garden, Delhi','110065':'Sagarpur, Delhi','110066':'Dakshinpuri, Delhi','110067':'Budh Vihar, Delhi','110068':'Ambedkar Nagar, Delhi','110069':'IIT Delhi','110070':'Panchwati, Delhi','110071':'Libaspur, Delhi','110072':'Sultanpuri, Delhi','110073':'Madipur, Delhi','110074':'Bijwasan New, Delhi','110075':'Nawada, Delhi','110076':'Deoli, Delhi','110077':'Dabri, Delhi','110078':'Mundka, Delhi','110081':'Kondli, Delhi','110082':'Prashant Vihar, Delhi','110083':'Begumpur, Delhi','110084':'Mangolpuri, Delhi','110085':'Rohini, Delhi','110086':'Bawana, Delhi','110087':'Qutab Vihar, Delhi','110088':'Paschim Puri, Delhi','110089':'New Kondli, Delhi','110090':'Geeta Colony, Delhi','110091':'Preet Vihar, Delhi','110092':'Shahdara, Delhi','110093':'Mayur Vihar Ph1, Delhi','110094':'Patparganj, Delhi','110095':'Mandoli, Delhi','110096':'Patparganj Ph2, Delhi',
+  // ── NOIDA / GHAZIABAD ──
+  '201001':'Ghaziabad City, Ghaziabad','201002':'Loni, Ghaziabad','201003':'Modinagar, Ghaziabad','201004':'Hapur, Ghaziabad','201005':'Rajnagar, Ghaziabad','201006':'Kavi Nagar, Ghaziabad','201007':'Vasundhara, Ghaziabad','201008':'Indirapuram, Ghaziabad','201009':'Crossings Republik, Ghaziabad','201010':'Sanjay Nagar, Ghaziabad','201012':'Pratap Vihar, Ghaziabad','201013':'Dasna, Ghaziabad','201015':'Muradnagar, Ghaziabad','201016':'Mohan Nagar, Ghaziabad','201017':'Sahibabad, Ghaziabad','201019':'Vijay Nagar, Ghaziabad','201301':'Noida Sector 1, Gautam Budh Nagar','201302':'Noida Sector 2, Gautam Budh Nagar','201303':'Noida Sector 18, Gautam Budh Nagar','201304':'Noida Sector 25, Gautam Budh Nagar','201305':'Noida Sector 37, Gautam Budh Nagar','201306':'Noida Sector 44, Gautam Budh Nagar','201307':'Noida Sector 50, Gautam Budh Nagar','201308':'Noida Sector 63, Gautam Budh Nagar','201309':'Noida Sector 12, Gautam Budh Nagar','201310':'Greater Noida, Gautam Budh Nagar','201311':'Bisrakh, Greater Noida','201312':'Dadri, Gautam Budh Nagar','201313':'Jewar, Gautam Budh Nagar',
+  // ── MUMBAI ──
+  '400001':'Fort, Mumbai','400002':'Masjid Bunder, Mumbai','400003':'Byculla, Mumbai','400004':'Walkeshwar, Mumbai','400005':'Colaba, Mumbai','400006':'Malabar Hill, Mumbai','400007':'Grant Road, Mumbai','400008':'Nana Chowk, Mumbai','400009':'Matunga, Mumbai','400010':'Mazgaon, Mumbai','400011':'Parel, Mumbai','400012':'Dadar West, Mumbai','400013':'Dadar East, Mumbai','400014':'Naigaon, Mumbai','400015':'Mahim, Mumbai','400016':'Bandra West, Mumbai','400017':'Dharavi, Mumbai','400018':'Worli, Mumbai','400019':'Chembur, Mumbai','400020':'Churchgate, Mumbai','400021':'Cuffe Parade, Mumbai','400022':'Sion, Mumbai','400023':'Lalbaug, Mumbai','400024':'Antop Hill, Mumbai','400025':'Santacruz West, Mumbai','400026':'Santacruz East, Mumbai','400027':'Andheri West, Mumbai','400028':'Vile Parle, Mumbai','400029':'Malad West, Mumbai','400030':'Goregaon, Mumbai','400051':'Bandra, Mumbai','400052':'Khar, Mumbai','400053':'Santacruz, Mumbai','400054':'Andheri, Mumbai','400055':'Jogeshwari, Mumbai','400056':'Malad, Mumbai','400057':'Kandivali, Mumbai','400058':'Borivali West, Mumbai','400059':'Borivali, Mumbai','400060':'Dadar, Mumbai','400061':'Vikhroli, Mumbai','400062':'Ghatkopar, Mumbai','400063':'Malad East, Mumbai','400064':'Borivali East, Mumbai','400065':'Mulund, Mumbai','400066':'Bhandup, Mumbai','400067':'Nahur, Mumbai','400068':'Kanjurmarg, Mumbai','400069':'Powai, Mumbai','400070':'Kurla, Mumbai','400071':'Mankhurd, Mumbai','400072':'Trombay, Mumbai','400074':'Ghatkopar East, Mumbai','400075':'Vikhroli West, Mumbai','400076':'Marol, Mumbai','400077':'Sakinaka, Mumbai','400078':'Govandi, Mumbai','400079':'Deonar, Mumbai','400080':'Versova, Mumbai','400081':'Dahisar, Mumbai','400082':'Borivali North, Mumbai','400083':'Mira Road, Thane','400086':'Kandivali East, Mumbai','400088':'Goregaon East, Mumbai','400092':'Jogeshwari East, Mumbai','400097':'Vasai, Palghar','400098':'Nalasopara, Palghar','400099':'Virar, Palghar',
+  // ── THANE ──
+  '400601':'Thane City','400602':'Thane East','400603':'Thane Vasant Vihar','400604':'Thane Manpada','400605':'Thane Wagle Estate','400606':'Thane Kalwa','400607':'Thane Mumbra','400608':'Thane Diva','400610':'Thane Dombivali','400612':'Thane Kalyan East','400614':'Thane Kalyan West','400615':'Thane Ulhasnagar','400701':'Panvel, Raigad','400702':'Khopoli, Raigad','400703':'Pen, Raigad','400704':'Alibag, Raigad','400705':'Navi Mumbai Vashi','400706':'Navi Mumbai Nerul','400707':'Navi Mumbai Belapur','400708':'Navi Mumbai Airoli','400709':'Navi Mumbai Ghansoli','400710':'Navi Mumbai Kopar Khairane',
+  // ── BANGALORE ──
+  '560001':'MG Road, Bengaluru','560002':'Bangalore GPO, Bengaluru','560003':'Frazer Town, Bengaluru','560004':'Malleswaram, Bengaluru','560005':'Rajajinagar, Bengaluru','560006':'Sadashivanagar, Bengaluru','560007':'Yelahanka, Bengaluru','560008':'Banaswadi, Bengaluru','560009':'Ramamurthy Nagar, Bengaluru','560010':'Hebbal, Bengaluru','560011':'Indiranagar, Bengaluru','560012':'Halasuru, Bengaluru','560013':'CV Raman Nagar, Bengaluru','560014':'Domlur, Bengaluru','560015':'Shivajinagar, Bengaluru','560017':'Visvesvarapura, Bengaluru','560019':'Koramangala, Bengaluru','560020':'Jayanagar, Bengaluru','560021':'Basavanagudi, Bengaluru','560022':'VV Puram, Bengaluru','560024':'Yeshwanthpur, Bengaluru','560025':'Peenya, Bengaluru','560026':'Jalahalli, Bengaluru','560027':'Mathikere, Bengaluru','560028':'Vijayanagar, Bengaluru','560029':'Nagarbhavi, Bengaluru','560030':'Kengeri, Bengaluru','560032':'Padmanabhanagar, Bengaluru','560034':'Girinagar, Bengaluru','560035':'Banashankari, Bengaluru','560036':'HSR Layout, Bengaluru','560037':'BTM Layout, Bengaluru','560038':'Koramangala 6th Block, Bengaluru','560040':'Hongasandra, Bengaluru','560041':'Begur, Bengaluru','560043':'Bannerghatta, Bengaluru','560044':'Electronic City, Bengaluru','560047':'Sarjapur, Bengaluru','560048':'Munnekolala, Bengaluru','560049':'Doddanekkundi, Bengaluru','560050':'Whitefield, Bengaluru','560051':'Marathahalli, Bengaluru','560052':'Varthur, Bengaluru','560053':'Brookefield, Bengaluru','560055':'New Thippasandra, Bengaluru','560056':'Old Airport Road, Bengaluru','560058':'HAL, Bengaluru','560059':'Hoodi, Bengaluru','560060':'K R Puram, Bengaluru','560061':'Dooravaninagar, Bengaluru','560062':'Mahadevapura, Bengaluru','560063':'Bellandur, Bengaluru','560066':'Kumaraswamy Layout, Bengaluru','560068':'Kanakapura, Bengaluru','560069':'Anjanapura, Bengaluru','560070':'Uttarahalli, Bengaluru','560076':'Harlur, Bengaluru','560078':'Kadugodi, Bengaluru','560087':'Bagalur, Bengaluru','560090':'Devanahalli, Bengaluru','560099':'Anekal, Bengaluru','560100':'Attibele, Bengaluru','560103':'Yelahanka New Town, Bengaluru','560104':'Dasarahalli, Bengaluru','560105':'Rajarajeshwari Nagar, Bengaluru',
+  // ── CHENNAI ──
+  '600001':'Parrys Corner, Chennai','600002':'Park Town, Chennai','600003':'Triplicane, Chennai','600004':'Chepauk, Chennai','600005':'Royapettah, Chennai','600006':'Nungambakkam, Chennai','600007':'Egmore, Chennai','600008':'Perambur, Chennai','600009':'Washermanpet, Chennai','600010':'Vepery, Chennai','600011':'Tondiarpet, Chennai','600012':'Basin Bridge, Chennai','600013':'Adambakkam, Chennai','600014':'Vadapalani, Chennai','600015':'Ashok Nagar, Chennai','600016':'Kodambakkam, Chennai','600017':'Saidapet, Chennai','600018':'T Nagar, Chennai','600019':'Anna Salai, Chennai','600020':'Mylapore, Chennai','600021':'Adyar, Chennai','600028':'Velachery, Chennai','600032':'Adyar South, Chennai','600040':'Sholinganallur, Chennai','600041':'Perungudi, Chennai','600042':'Tambaram, Kancheepuram','600045':'Medavakkam, Chennai','600048':'Anna Nagar, Chennai','600049':'Kilpauk, Chennai','600050':'Villivakkam, Chennai','600051':'Kolathur, Chennai','600052':'Korattur, Chennai','600053':'Vyasarpadi, Chennai','600060':'Porur, Chennai','600082':'Ambattur, Chennai','600083':'Avadi, Tiruvallur','600090':'Thoraipakkam, Chennai','600091':'Sholinganallur New, Chennai','600095':'Pallikaranai, Chennai','600096':'Madipakkam, Chennai','600097':'Chrompet, Kancheepuram','600100':'Selaiyur, Kancheepuram','600116':'Maraimalai Nagar, Kancheepuram','600119':'Perungalathur, Kancheepuram','600122':'Padappai, Kancheepuram','600123':'Guduvancheri, Kancheepuram','600125':'Urapakkam, Kancheepuram','600127':'Vandalur, Kancheepuram','600128':'Chitlapakkam, Kancheepuram','600130':'Pammal, Kancheepuram',
+  // ── KOLKATA ──
+  '700001':'BBD Bagh, Kolkata','700002':'Bow Bazar, Kolkata','700003':'Taltala, Kolkata','700004':'Bhowanipore, Kolkata','700005':'Alipore, Kolkata','700006':'Tollygunge, Kolkata','700007':'Kalighat, Kolkata','700008':'Chetla, Kolkata','700009':'Dum Dum, Kolkata','700010':'Howrah City, Howrah','700011':'Kidderpur, Kolkata','700012':'Shyambazar, Kolkata','700013':'Girish Park, Kolkata','700014':'Entally, Kolkata','700015':'Belgachia, Kolkata','700016':'Lake Gardens, Kolkata','700017':'Kasba, Kolkata','700018':'Netaji Nagar, Kolkata','700019':'Ballygunge, Kolkata','700020':'Gariahat, Kolkata','700025':'Kankurgachi, Kolkata','700026':'Kidderpore, Kolkata','700028':'Narkeldanga, Kolkata','700029':'Phoolbagan, Kolkata','700030':'Behala, Kolkata','700031':'Maheshtala, South 24 Parganas','700032':'Joka, South 24 Parganas','700033':'Thakurpukur, Kolkata','700034':'Garia, Kolkata','700035':'Jadavpur, Kolkata','700036':'Regent Park, Kolkata','700037':'Baruipur, South 24 Parganas','700038':'Baghajatin, Kolkata','700039':'Dhakuria, Kolkata','700040':'Mukundapur, Kolkata','700041':'New Garia, Kolkata','700042':'Haltu, Kolkata','700043':'Narendrapur, South 24 Parganas','700044':'Beleghata, Kolkata','700045':'Ultadanga, Kolkata','700046':'Rajarhat, North 24 Parganas','700047':'Salt Lake, North 24 Parganas','700048':'New Town, North 24 Parganas','700049':'Baguiati, North 24 Parganas','700050':'Bangur, Kolkata','700051':'Lake Town, Kolkata','700052':'Nager Bazar, Kolkata','700053':'Kestopur, North 24 Parganas','700054':'Madhyamgram, North 24 Parganas','700055':'Sodepur, North 24 Parganas','700056':'Birati, North 24 Parganas','700057':'Baranagar, Kolkata','700058':'Uttarpara, Hooghly','700059':'Serampore, Hooghly','700060':'Rishra, Hooghly','700061':'Konnagar, Hooghly','700062':'Baidyabati, Hooghly','700063':'Chandannagar, Hooghly',
+  // ── HYDERABAD ──
+  '500001':'Hyderabad Old City, Hyderabad','500002':'Koti, Hyderabad','500003':'Abids, Hyderabad','500004':'Himayat Nagar, Hyderabad','500005':'Musheerabad, Hyderabad','500006':'Begumpet, Hyderabad','500007':'Marredpally, Secunderabad','500008':'Secunderabad, Hyderabad','500009':'Trimulgherry, Secunderabad','500010':'Moula Ali, Hyderabad','500011':'Uppal, Hyderabad','500013':'Dilsukh Nagar, Hyderabad','500015':'LB Nagar, Hyderabad','500016':'Malakpet, Hyderabad','500017':'Falaknuma, Hyderabad','500018':'Chandrayangutta, Hyderabad','500019':'Charminar, Hyderabad','500020':'Nampally, Hyderabad','500023':'Asif Nagar, Hyderabad','500024':'Mehdipatnam, Hyderabad','500025':'Golconda, Hyderabad','500026':'Rajendra Nagar, Hyderabad','500027':'Attapur, Hyderabad','500028':'Tolichowki, Hyderabad','500029':'Jubilee Hills, Hyderabad','500030':'Banjara Hills, Hyderabad','500031':'Masab Tank, Hyderabad','500032':'Punjagutta, Hyderabad','500033':'Ameerpet, Hyderabad','500034':'Khairatabad, Hyderabad','500035':'Film Nagar, Hyderabad','500036':'Madhapur, Hyderabad','500037':'Kondapur, Hyderabad','500038':'Gachibowli, Hyderabad','500039':'Nanakramguda, Hyderabad','500040':'Financial District, Hyderabad','500041':'Kukatpally, Hyderabad','500042':'BHEL, Hyderabad','500043':'Miyapur, Hyderabad','500044':'Bachupally, Hyderabad','500045':'Nizampet, Hyderabad','500046':'Kompally, Hyderabad','500047':'Malkajgiri, Hyderabad','500048':'Nacharam, Hyderabad','500049':'Boduppal, Hyderabad','500050':'ECIL, Hyderabad','500051':'Kapra, Hyderabad','500052':'Alwal, Secunderabad','500053':'Balanagar, Hyderabad','500054':'Sanathnagar, Hyderabad','500055':'Jeedimetla, Hyderabad','500056':'Quthbullapur, Hyderabad','500060':'Sainikpuri, Secunderabad','500061':'Yapral, Secunderabad','500062':'Nagole, Hyderabad','500063':'Vanasthalipuram, Hyderabad','500072':'LB Nagar New, Hyderabad',
+  // ── PUNE ──
+  '411001':'Pune City, Pune','411002':'Sadashiv Peth, Pune','411004':'Kothrud, Pune','411005':'Erandwane, Pune','411006':'Deccan, Pune','411007':'Shivajinagar, Pune','411008':'Aundh, Pune','411009':'Baner, Pune','411010':'Pimple Saudagar, Pune','411011':'Akurdi, Pimpri-Chinchwad','411012':'Pimpri, Pimpri-Chinchwad','411013':'Chinchwad, Pimpri-Chinchwad','411014':'Bhosari, Pimpri-Chinchwad','411017':'Wakad, Pune','411018':'Hadapsar, Pune','411019':'Magarpatta, Pune','411021':'Kharadi, Pune','411022':'Wagholi, Pune','411023':'Koregaon Park, Pune','411024':'Kalyani Nagar, Pune','411026':'Bibvewadi, Pune','411027':'Wanowrie, Pune','411028':'Undri, Pune','411029':'Kondhwa, Pune','411032':'Katraj, Pune','411033':'Ambegaon, Pune','411037':'Pashan, Pune','411038':'Sus, Pune','411039':'Hinjewadi, Pune','411045':'Sopan Baug, Pune','411046':'Viman Nagar, Pune','411047':'Vishrantwadi, Pune','411048':'Dhanori, Pune','411049':'Lohegaon, Pune','411051':'Yerawada, Pune','411052':'Vadgaon Sheri, Pune','411057':'Balewadi, Pune','411058':'Baner New, Pune',
+  // ── JAIPUR ──
+  '302001':'Pink City, Jaipur','302002':'Raja Park, Jaipur','302003':'Johari Bazar, Jaipur','302004':'Civil Lines, Jaipur','302005':'Bani Park, Jaipur','302006':'Malviya Nagar, Jaipur','302007':'Vaishali Nagar, Jaipur','302008':'Mansarovar, Jaipur','302009':'Chitrakoot, Jaipur','302010':'Shyam Nagar, Jaipur','302011':'Jagatpura, Jaipur','302012':'Sanganer, Jaipur','302013':'Durgapura, Jaipur','302015':'Sitapura, Jaipur','302016':'Pratap Nagar, Jaipur','302017':'Ajmer Road, Jaipur','302018':'Tonk Road, Jaipur','302019':'Murlipura, Jaipur','302020':'Hasanpura, Jaipur','302021':'Vishwakarma, Jaipur','302022':'Paldi, Jaipur','302023':'Kanakpura, Jaipur','302024':'Gopalpura, Jaipur','302025':'Sodala, Jaipur','302026':'Jhotwara, Jaipur','302027':'Vidhyadhar Nagar, Jaipur','302028':'Galta Gate, Jaipur','302029':'Sikar Road, Jaipur','302031':'Amer, Jaipur','302033':'Harmara, Jaipur','302034':'Vatika, Jaipur','302036':'Kalwar, Jaipur','302039':'Bagru, Jaipur',
+  // ── AHMEDABAD ──
+  '380001':'Ahmedabad City, Ahmedabad','380002':'Odhav, Ahmedabad','380003':'Naroda, Ahmedabad','380004':'Gomtipur, Ahmedabad','380005':'Sarangpur, Ahmedabad','380006':'Navrangpura, Ahmedabad','380007':'Ellis Bridge, Ahmedabad','380008':'Bapunagar, Ahmedabad','380009':'Kankaria, Ahmedabad','380010':'Maninagar, Ahmedabad','380013':'Vatva, Ahmedabad','380014':'Ghodasar, Ahmedabad','380015':'Nikol, Ahmedabad','380016':'Vastral, Ahmedabad','380017':'Rakhial, Ahmedabad','380018':'Chandkheda, Gandhinagar','380019':'Ghatlodia, Ahmedabad','380021':'Memnagar, Ahmedabad','380022':'Navarangpura, Ahmedabad','380023':'Satellite, Ahmedabad','380024':'Prahladnagar, Ahmedabad','380025':'Bodakdev, Ahmedabad','380026':'Vastrapur, Ahmedabad','380027':'Jodhpur, Ahmedabad','380028':'Prahlad Nagar, Ahmedabad','380029':'South Bopal, Ahmedabad','380030':'Ambavadi, Ahmedabad','380050':'Bapu Nagar, Ahmedabad','380051':'Jamalpur, Ahmedabad','380052':'Mirzapur, Ahmedabad','380053':'Amraiwadi, Ahmedabad','380054':'Naranpura, Ahmedabad','380055':'Paldi, Ahmedabad','380058':'Shahibaug, Ahmedabad','380059':'Krishnanagar, Ahmedabad','380060':'Thaltej, Ahmedabad','380061':'Bopal, Ahmedabad','380063':'Iskon, Ahmedabad','380064':'Nava Vadaj, Ahmedabad','380070':'Motera, Ahmedabad','380080':'Ranip, Ahmedabad',
+  // ── SURAT ──
+  '395001':'Surat City, Surat','395002':'Udhna, Surat','395003':'Katargam, Surat','395004':'Rander, Surat','395005':'Varachha, Surat','395006':'Adajan, Surat','395007':'Dindoli, Surat','395008':'Bhatar, Surat','395009':'Althan, Surat','395010':'Pal, Surat','395011':'Vesu, Surat','395012':'Piplod, Surat','395013':'Jahangirpura, Surat','395017':'Sachin, Surat','395023':'Kim, Surat (Taluka: Olpad)','395024':'Kosad, Surat','394601':'Bardoli, Surat',
+  // ── VADODARA ──
+  '390001':'Vadodara City, Vadodara','390002':'Alkapuri, Vadodara','390003':'Fatehgunj, Vadodara','390004':'Gorwa, Vadodara','390005':'Makarpura, Vadodara','390006':'Manjalpur, Vadodara','390007':'Waghodia, Vadodara','390008':'Nizampura, Vadodara','390009':'Subhanpura, Vadodara','390010':'Sayajiganj, Vadodara','390011':'Tarsali, Vadodara','390012':'Karelibaug, Vadodara','390013':'Sama, Vadodara','390015':'Akota, Vadodara','390016':'Harni, Vadodara','390017':'Atladra, Vadodara','390018':'Gotri, Vadodara','390019':'Bapod, Vadodara','390020':'Bil, Vadodara','390021':'Sevasi, Vadodara','390022':'Pratapgunj, Vadodara','390023':'Vishwamitri, Vadodara','390024':'Dabhoi Rd, Vadodara',
+  // ── RAJKOT ──
+  '360001':'Rajkot City, Rajkot','360002':'Mavdi, Rajkot','360003':'Kalawad Road, Rajkot','360004':'Bhakti Nagar, Rajkot','360005':'University Road, Rajkot','360006':'Aji Vasahat, Rajkot','360007':'Yagnik Road, Rajkot','360020':'Morbi, Morbi','360021':'Wankaner, Morbi','360030':'Gondal, Rajkot','360035':'Jetpur, Rajkot','360040':'Upleta, Rajkot','360045':'Dhoraji, Rajkot','360050':'Paddhari, Rajkot','360055':'Kotda Sangani, Rajkot','360060':'Lodhika, Rajkot','360065':'Jasdan, Rajkot',
+  // ── JAMNAGAR ──
+  '361001':'Jamnagar City, Jamnagar','361002':'Digvijay Plot, Jamnagar','361003':'Ranjit Sagar, Jamnagar','361004':'Aerodrome, Jamnagar','361005':'Lakhabawal, Jamnagar','361006':'Indira Colony, Jamnagar','361008':'Khambhalia, Devbhumi Dwarka','361010':'Okha, Devbhumi Dwarka','361012':'Dwarka, Devbhumi Dwarka','361020':'Lalpur, Jamnagar',
+  // ── BHAVNAGAR ──
+  '364001':'Bhavnagar City, Bhavnagar','364002':'Bhavnagar New, Bhavnagar','364003':'Bhavnagar East, Bhavnagar','364004':'Ghogha, Bhavnagar','364005':'Sihor, Bhavnagar','364006':'Talaja, Bhavnagar','364010':'Mahuva, Bhavnagar','364015':'Gariadhar, Bhavnagar','364020':'Palitana, Bhavnagar',
+  // ── VALSAD / NAVSARI ──
+  '396001':'Valsad City, Valsad','396002':'Abrama, Valsad','396003':'Tithal, Valsad','396006':'Valsad Rural, Valsad','396007':'Dharampur, Valsad','396035':'Bilimora, Navsari','396040':'Gandevi, Navsari','396045':'Chikhli, Navsari','396050':'Navsari City, Navsari','396051':'Navsari East, Navsari','396055':'Bansda, Navsari','396060':'Vansda, Navsari','396065':'Khergam, Navsari','396067':'Jalalpore, Navsari','396101':'Vapi, Valsad','396105':'Daman, Daman','396107':'Silvassa, Dadra Nagar Haveli','396110':'Dadra, Dadra Nagar Haveli','396115':'Umbergaon, Valsad','396120':'Pardi, Valsad','396125':'Bhilad, Valsad','396130':'Kaprada, Valsad','396135':'Dharampur Taluka, Valsad','396145':'Tithal Beach, Valsad','396175':'Gandevi Rural, Navsari','396193':'Navsari Taluka, Navsari',
+  // ── BHARUCH / ANKLESHWAR ──
+  '392001':'Bharuch City, Bharuch','392002':'Amod, Bharuch','392005':'Bharuch Rural, Bharuch','392010':'Ankleshwar, Bharuch','392011':'Ankleshwar GIDC, Bharuch','392012':'Hansot, Bharuch','392015':'Vagra, Bharuch','392020':'Jambusar, Bharuch','392025':'Anklesvar Taluka, Bharuch','392030':'Jhagadia, Bharuch','392035':'Netrang, Bharuch','392040':'Rajpipla, Narmada','392045':'Dediapada, Narmada','392050':'Tilakwada, Narmada','392055':'Garudeshwar, Narmada','392060':'Kavant, Chhota Udaipur','396230':'Ankleshwar New, Bharuch','396235':'Bharuch City, Bharuch','396240':'Jhagadia GIDC, Bharuch','396310':'Surat Rural, Surat',
+  // ── GANDHINAGAR ──
+  '382001':'Gandhinagar Sector 1, Gandhinagar','382002':'Gandhinagar Sector 2, Gandhinagar','382006':'Gandhinagar Sector 6, Gandhinagar','382007':'Gandhinagar Sector 7, Gandhinagar','382008':'Gandhinagar Sector 8, Gandhinagar','382010':'Gandhinagar Sector 10, Gandhinagar','382015':'Gandhinagar Sector 15, Gandhinagar','382016':'Gandhinagar Sector 16, Gandhinagar','382021':'Gandhinagar Sector 21, Gandhinagar','382028':'Gandhinagar Sector 28, Gandhinagar','382421':'Kalol, Gandhinagar','382424':'Kadi, Mehsana','382430':'Visnagar, Mehsana','382435':'Mahesana City, Mehsana','382440':'Unjha, Mehsana','382443':'Vadnagar, Mehsana','382445':'Kheralu, Mehsana',
+  // ── LUCKNOW ──
+  '226001':'Lucknow Central, Lucknow','226002':'Hazratganj, Lucknow','226003':'Chowk, Lucknow','226004':'Kaiserbagh, Lucknow','226005':'Aminabad, Lucknow','226006':'Nazar Bagh, Lucknow','226007':'Alambagh, Lucknow','226008':'Aliganj, Lucknow','226009':'Indiranagar, Lucknow','226010':'Gomtinagar, Lucknow','226011':'Vikas Nagar, Lucknow','226012':'Mahanagar, Lucknow','226013':'Rajajipuram, Lucknow','226014':'Jankipuram, Lucknow','226015':'Vrindavan Yojana, Lucknow','226016':'Kursi Road, Lucknow','226017':'Faizabad Road, Lucknow','226021':'Chinhat, Lucknow','226022':'Barabanki, Barabanki','226024':'Kakori, Lucknow','226025':'Gosainganj, Lucknow','226028':'Sarojini Nagar, Lucknow','226030':'Raebareli Road, Lucknow',
+  // ── INDORE ──
+  '452001':'Indore City, Indore','452002':'Aerodrome, Indore','452003':'Palasia, Indore','452004':'Rajwada, Indore','452005':'Bicholi Hapsi, Indore','452006':'Annapurna, Indore','452007':'Banganga, Indore','452008':'Sudama Nagar, Indore','452009':'Kanadiya, Indore','452010':'Nipania, Indore','452011':'Bhawarkuan, Indore','452012':'Vijay Nagar, Indore','452013':'AB Road, Indore','452014':'Navlakha, Indore','452015':'Betma, Indore','452016':'Bijalpur, Indore','452018':'Rajendra Nagar, Indore','452019':'Tejaji Nagar, Indore','452020':'Bhanwar Kuan, Indore','452021':'Lasudia, Indore','452022':'Sanwer, Indore','452023':'Mhow, Indore','452024':'Pithampur, Dhar','452025':'Depalpur, Indore',
+  // ── NAGPUR ──
+  '440001':'Nagpur City, Nagpur','440002':'Mahal, Nagpur','440003':'Sitabuldi, Nagpur','440004':'Dharampeth, Nagpur','440005':'Dhantoli, Nagpur','440006':'Nandanvan, Nagpur','440007':'Bajaj Nagar, Nagpur','440008':'Pratap Nagar, Nagpur','440009':'MIDC, Nagpur','440010':'Kamptee, Nagpur','440013':'Wardha Road, Nagpur','440014':'Manish Nagar, Nagpur','440015':'South Ambazari, Nagpur','440016':'Sakkardara, Nagpur','440017':'North Ambazari, Nagpur','440018':'Jaripatka, Nagpur','440019':'Trimurti Nagar, Nagpur','440020':'Gandhibagh, Nagpur','440021':'Itwari, Nagpur','440022':'Wadi, Nagpur','440023':'Zingabai Takli, Nagpur','440024':'New Nagpur, Nagpur','440025':'Kalamna, Nagpur','440026':'Agrico, Nagpur','440027':'Rana, Nagpur','440032':'Swavalambi Nagar, Nagpur','440033':'Mankapur, Nagpur','440034':'Suyog Nagar, Nagpur',
+  // ── RAIPUR ──
+  '492001':'Raipur City, Raipur','492002':'Mowa, Raipur','492003':'Shanti Nagar, Raipur','492004':'Kota, Raipur','492005':'Birgaon, Raipur','492006':'Siltara, Raipur','492007':'Urla, Raipur','492008':'Mandir Hasaud, Raipur','492009':'Naya Raipur, Raipur','492010':'Abhanpur, Raipur','492012':'Tilda, Raipur','492013':'Bhatagaon, Raipur',
+  // ── BHOPAL ──
+  '462001':'Bhopal City, Bhopal','462002':'Arera Colony, Bhopal','462003':'Habibganj, Bhopal','462004':'Kohefiza, Bhopal','462006':'Berasia Road, Bhopal','462007':'Mandideep, Raisen','462008':'Misrod, Bhopal','462010':'Bairagarh, Bhopal','462011':'Lalghati, Bhopal','462016':'Kolar, Bhopal','462021':'Ayodhya Nagar, Bhopal','462022':'Ashoka Garden, Bhopal','462023':'Govindpura, Bhopal','462024':'Shahpura, Bhopal','462026':'Katara Hills, Bhopal','462030':'Chunabhatti, Bhopal','462036':'Bag Mugaliya, Bhopal','462038':'Trilanga, Bhopal','462039':'Danish Nagar, Bhopal','462042':'Piplani, Bhopal','462043':'Nayagaon, Bhopal','462044':'Karond, Bhopal','462046':'Bharat Talkies, Bhopal','462047':'Kamla Park, Bhopal',
+  // ── VARANASI ──
+  '221001':'Varanasi City, Varanasi','221002':'Lanka, Varanasi','221003':'Sighania, Varanasi','221004':'Maldahiya, Varanasi','221005':'Bhojuveer, Varanasi','221006':'Sigra, Varanasi','221007':'Adampur, Varanasi','221008':'Assi, Varanasi','221009':'Nadesar, Varanasi','221010':'Bhelupur, Varanasi','221011':'Lahurabir, Varanasi','221012':'Mahmoorganj, Varanasi','221016':'Sunderpur, Varanasi','221106':'Sarnath, Varanasi','221109':'BHU, Varanasi','221110':'Shivpur, Varanasi','221116':'Ramnagar, Varanasi',
+  // ── PRAYAGRAJ ──
+  '211001':'Prayagraj City, Prayagraj','211002':'Civil Lines, Prayagraj','211003':'Lukerganj, Prayagraj','211004':'George Town, Prayagraj','211007':'Naini, Prayagraj','211010':'Phaphamau, Prayagraj','211012':'Kareli, Prayagraj','211014':'Bamrauli, Prayagraj','211016':'Baghambari, Prayagraj','211020':'Jhunsi, Prayagraj',
+  // ── DEHRADUN ──
+  '248001':'Dehradun City, Dehradun','248002':'Rajpur, Dehradun','248003':'Raipur, Dehradun','248006':'Saharanpur Road, Dehradun','248007':'Prem Nagar, Dehradun','248008':'Niranjanpur, Dehradun','248009':'Haridwar Road, Dehradun','248010':'Jakhan, Dehradun','248011':'Sewla Kalan, Dehradun','248012':'ISBT, Dehradun','248013':'Aamwala, Dehradun','248014':'Kargi, Dehradun','248015':'Dalanwala, Dehradun','248121':'Haridwar City, Haridwar','248122':'Rishikesh, Dehradun',
+  // ── SAHARANPUR / AGRA ──
+  '247001':'Saharanpur City, Saharanpur','247002':'Chilkana Road, Saharanpur','247121':'Muzaffarnagar, Muzaffarnagar','282001':'Agra City, Agra','282002':'Tajganj, Agra','282003':'Agra Cantonment, Agra','282004':'Shahganj, Agra','282005':'Kamla Nagar, Agra','282006':'Bodla, Agra','282007':'Dayal Bagh, Agra','282008':'Sikandra, Agra','282010':'Etmadpur, Agra',
+  // ── KANPUR ──
+  '208001':'Kanpur City, Kanpur','208002':'Swaroop Nagar, Kanpur','208003':'Govind Nagar, Kanpur','208004':'Kakadeo, Kanpur','208005':'Kidwai Nagar, Kanpur','208006':'Civil Lines, Kanpur','208007':'Naramau, Kanpur','208008':'Armapur, Kanpur','208009':'Rawatpur, Kanpur','208010':'Ashok Nagar, Kanpur','208011':'Kalyanpur, Kanpur','208012':'Jajmau, Kanpur','208013':'Shyam Nagar, Kanpur','208014':'Vikas Nagar, Kanpur','208015':'Panki, Kanpur','208016':'Ratan Lal Nagar, Kanpur','208017':'Naubasta, Kanpur','208019':'Harsh Nagar, Kanpur','208020':'Lal Bangla, Kanpur','208021':'Kidwai Nagar New, Kanpur','208022':'Darshanpurwa, Kanpur','208023':'Talaq Mahal, Kanpur','208024':'Ratanlal Nagar, Kanpur','208025':'Chakeri, Kanpur',
+};
+
+const CAT_COLORS=[{h:'#4caf50',b:'#0a2e1a'},{h:'#e91e8c',b:'#2e0a22'},{h:'#42a5f5',b:'#0a1e2e'},{h:'#ff9800',b:'#2e1a0a'},{h:'#e040fb',b:'#2a0a2e'},{h:'#ff5252',b:'#2e0a0a'},{h:'#26c6da',b:'#0a2a2e'},{h:'#ffd740',b:'#2e2a0a'},{h:'#69f0ae',b:'#0a2e1a'},{h:'#ff7043',b:'#2e1a0a'},{h:'#90caf9',b:'#0a1e2e'},{h:'#f48fb1',b:'#2e0a22'}];
+
+const LX={hi:{lang:'Bhasha Chunein',pin:'Apna Pincode Daalen (Optional)',start:'Shop Kholiey',all:'Sab',src:'Product ya dukaan dhundho...',local:'Aapke Ilake Ki',other:'Baaki Products',nop:'Koi product nahi mila',cartBtn:'Order Karo'},en:{lang:'Choose Language',pin:'Enter Pincode (Optional)',start:'Open Shop',all:'All',src:'Search product or shop...',local:'Near You',other:'All Products',nop:'No products found',cartBtn:'Place Order'},local:{lang:'Bhasha Chunein',pin:'Pincode Daalen',start:'Dukaan Kholen',all:'Sab',src:'Utpad khojein...',local:'Aapke Kshetra Ki',other:'Sab Utpad',nop:'Koi utpad nahi mila',cartBtn:'Order Karein'}};
+
+// STATE
+let prods=[],vendors=[],orders=[];
+let qty={},activeCat='all',afilt='all',searchQ='';
+let curLang='hi',curPin='',curArea='';
+let curVendor=null,MIA_WA='';
+let vCat=null,vPhoto=null,aCat=null,aPhoto=null,selCI=0;
+
+// HELPERS
+function getAPin(){return localStorage.getItem('zpx_apin')||DPIN;}
+function getCats(){try{const s=localStorage.getItem('zpx_cats');if(s){const parsed=JSON.parse(s);const valid=parsed.filter(c=>c&&c.n);if(valid.length)return valid;}}catch(e){}const d=[{n:'Kirana',c:'#4caf50',b:'#0a2e1a'},{n:'Cosmetics',c:'#e91e8c',b:'#2e0a22'},{n:'Wear',c:'#42a5f5',b:'#0a1e2e'},{n:'Services',c:'#ff9800',b:'#2e1a0a'}];saveCats(d);return d;}
+function saveCats(c){localStorage.setItem('zpx_cats',JSON.stringify(c));}
+function getCat(n){return getCats().find(x=>x.n===n)||{c:'#64a0c0',b:'#0c2233',n:n};}
+function ulbl(u){return{kg:'KG',piece:'Piece',litre:'Litre',service:'Service',hour:'Hour',set:'Set',bottle:'Bottle',dozen:'Dozen'}[u]||u;}
+function city(pin){return PM[String(pin).trim().replace(/\D/g,'')]||'';}
+function L(){return LX[curLang]||LX.hi;}
+function toast(m,t){const el=document.getElementById('toast');el.textContent=m;el.className='toast show '+(t||'info');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2800);}
+
+// SETUP
+function onSetupPin(v){
+  const clean=v.trim().replace(/\D/g,'');
+  const c=city(clean);
+  const h=document.getElementById('cityHint');
+  if(c&&clean.length===6){h.innerHTML='&#128205; '+c;h.classList.add('show');curPin=clean;curArea=c;}
+  else{h.classList.remove('show');curPin=clean.length===6?clean:'';curArea='';}
+}
+function setLang(l,el){curLang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');applyLang();}
+function applyLang(){
+  document.documentElement.setAttribute('data-lang',curLang);
+  const Lx=L();
+  const s=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
+  s('lLang',Lx.lang);s('lPin',Lx.pin);s('lStart',Lx.start);
+  const si=document.getElementById('searchInp');if(si)si.placeholder=Lx.src;
+  const ls=document.getElementById('langSel');if(ls)ls.value=curLang;
+  localStorage.setItem('zpx_lang',curLang);
+}
+function changeLang(l){curLang=l;applyLang();renderCatTabs();renderProds();}
+function startApp(){
+  const pv=document.getElementById('setupPin').value.trim().replace(/\D/g,'');
+  if(pv.length===6){curPin=pv;curArea=city(pv);if(curPin)localStorage.setItem('zpx_pin',curPin);}
+  localStorage.setItem('zpx_setup','1');
+  document.getElementById('setup').style.display='none';
+  document.getElementById('app').style.display='block';
+  applyLang();applyTheme();updatePinUI();
+  loadSavedProfile();
+  prods=getDemos();renderCatTabs();renderProds();
+  setTimeout(loadAll,600);
+}
+
+// THEME
+function toggleTheme(){
+  const th=document.getElementById('hamTheme');if(th){}
+  const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  const i=t==='dark'?'&#9790;':'&#9728;';
+  ['themeNi','spTheme'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=i;});
+  localStorage.setItem('zpx_theme',t);
+}
+function applyTheme(){
+  const t=localStorage.getItem('zpx_theme')||'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  const i=t==='dark'?'&#9790;':'&#9728;';
+  ['themeNi','spTheme'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=i;});
+}
+
+// PIN UI
+function updatePinUI(){
+  const na=document.getElementById('npArea'),nt=document.getElementById('npAreaTxt');
+  if(curArea&&na&&nt){na.classList.add('show');nt.textContent=curArea;}
+  else if(na)na.classList.remove('show');
+}
+
+function onVRegPin(v){
+  const clean=v.trim().replace(/\D/g,'');
+  const c=city(clean);
+  const lbl=document.getElementById('vRegCity');
+  if(c&&clean.length===6){lbl.innerHTML='&#128205; '+c;lbl.classList.add('show');}
+  else lbl.classList.remove('show');
+}
+
+// API
+async function apiGet(a){try{const r=await fetch(API+'?action='+a);return r.json();}catch(e){return{ok:false};}}
+async function apiPost(b){try{const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}catch(e){return{ok:false};}}
+
+async function loadAll(){
+  try{
+    const[pR,vR,oR]=await Promise.all([apiGet('getAllProducts'),apiGet('getVendors'),apiGet('getOrders')]);
+    if(pR.ok&&pR.data&&pR.data.length){
+      prods=pR.data.map(p=>({...p,price:Number(p.price)||0,delivery:Number(p.delivery)||0,approved:p.approved===true||String(p.approved).toUpperCase()==='TRUE'}));
+      renderCatTabs();renderProds();
+    }
+    if(vR.ok)vendors=vR.data||[];
+    if(oR.ok)orders=oR.data||[];
+    if(document.getElementById('adminPanel').style.display!=='none')renderAdmin();
+    const sR=await apiGet('getAdminSecrets');
+    if(sR.ok&&sR.data){
+      MIA_WA=sR.data.waNumber||'';
+      const ai=document.getElementById('aOwner');
+      if(ai&&sR.data.ownerName){let t=sR.data.ownerName;if(sR.data.ownerPhone)t+=' | '+sR.data.ownerPhone;ai.textContent=t;}
+      const hw=document.getElementById('helpWA');
+      if(hw&&MIA_WA)hw.onclick=()=>window.open('https://wa.me/'+MIA_WA,'_blank');
+    }
+  }catch(e){}
+}
+
+function getDemos(){return[{id:'d1',name:'Basmati Chawal',price:80,unit:'kg',cat:'Kirana',photo:'',vendorId:'mia',shopName:SHOP,approved:true,delivery:20,pincode:''},{id:'d2',name:'Sarso ka Tel',price:150,unit:'litre',cat:'Kirana',photo:'',vendorId:'mia',shopName:SHOP,approved:true,delivery:0,pincode:''},{id:'d3',name:'Lipstick Set',price:250,unit:'set',cat:'Cosmetics',photo:'',vendorId:'mia',shopName:SHOP,approved:true,delivery:0,pincode:''},{id:'d4',name:'Cotton Kurti',price:350,unit:'piece',cat:'Wear',photo:'',vendorId:'mia',shopName:SHOP,approved:true,delivery:50,pincode:''},{id:'d5',name:'AC Repair',price:500,unit:'service',cat:'Services',photo:'',vendorId:'mia',shopName:SHOP,approved:true,delivery:0,pincode:''}];}
+
+// VIEWS
+function showView(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+  document.getElementById('view-'+v).classList.add('on');
+  ['navShop','navVend','navAdmin'].forEach(id=>document.getElementById(id)?.classList.remove('on'));
+  const m={shop:'navShop',vendor:'navVend',admin:'navAdmin'};
+  document.getElementById(m[v])?.classList.add('on');
+  if(v==='shop')renderProds();
+  if(v==='admin'&&document.getElementById('adminPanel').style.display!=='none')renderAdmin();
+  if(v==='vendor')renderVendorView();
+}
+
+// SEARCH
+function doSearch(v){searchQ=v.toLowerCase();document.getElementById('sClear').style.display=v?'block':'none';renderProds();}
+function clearSearch(){document.getElementById('searchInp').value='';document.getElementById('sClear').style.display='none';searchQ='';renderProds();}
+
+// CATEGORIES
+function renderCatTabs(){
+  const cats=getCats();
+  const tabs=document.getElementById('catTabs');
+  tabs.innerHTML=`<div class="ctab on" onclick="filterCat('all',this)">${L().all}</div>`;
+  cats.forEach(c=>{const d=document.createElement('div');d.className='ctab';d.textContent=c.n;d.onclick=function(){filterCat(c.n,this);};tabs.appendChild(d);});
+  const nc=document.getElementById('npCats');if(nc)nc.textContent=cats.map(c=>c.n).join(' | ');
+  renderCatPills('vCpills','v');renderCatPills('aCpills','a');
+}
+function renderCatPills(cid,who){const el=document.getElementById(cid);if(!el)return;el.innerHTML=getCats().map(c=>`<div class="cp" data-cat="${c.n}" style="border-color:${c.c}55;color:${c.c};" onclick="selCat(this,'${who}')">${c.n}</div>`).join('');}
+function filterCat(cat,el){
+  activeCat=cat;
+  document.querySelectorAll('#catTabs .ctab').forEach(t=>{t.classList.remove('on');t.style.background='';t.style.borderColor='';t.style.color='';});
+  el.classList.add('on');
+  renderProds();
+}
+function selCat(el,who){
+  const pid=who==='v'?'vCpills':'aCpills';
+  document.querySelectorAll('#'+pid+' .cp').forEach(p=>{p.classList.remove('on');p.style.background='var(--bg)';p.style.borderWidth='1.5px';});
+  el.classList.add('on');const ci=getCat(el.dataset.cat);el.style.background=ci.b;el.style.borderWidth='2px';
+  if(who==='v')vCat=el.dataset.cat;else aCat=el.dataset.cat;
+}
+
+// PRODUCTS
+function renderProds(){
+  const grid=document.getElementById('prodGrid');
+  let list=prods.filter(p=>p.approved);
+  if(activeCat!=='all')list=list.filter(p=>p.cat===activeCat);
+  if(searchQ)list=list.filter(p=>(p.name||'').toLowerCase().includes(searchQ)||(p.shopName||'').toLowerCase().includes(searchQ)||(p.cat||'').toLowerCase().includes(searchQ));
+  if(!list.length){grid.innerHTML=`<div class="empty"><div class="empty-icon">&#128269;</div><div>${L().nop}</div></div>`;updateCartBar();return;}
+  let local=[],other=[];
+  if(curPin)list.forEach(p=>(String(p.pincode||'').trim()===curPin?local:other).push(p));
+  else other=list;
+  let html='';
+  if(local.length){html+=`<div class="sec-lbl local">&#11088; ${L().local} (${curArea})</div>`;html+=local.map(p=>pCardHTML(p,true)).join('');}
+  if(other.length){if(local.length)html+=`<div class="sec-lbl other">&#127758; ${L().other}</div>`;html+=other.map(p=>pCardHTML(p,false)).join('');}
+  grid.innerHTML=html;updateCartBar();
+}
+
+function pCardHTML(p,isLocal){
+  if(!qty[p.id])qty[p.id]=0;
+  const q=qty[p.id],ci=getCat(p.cat),del=Number(p.delivery)||0,isOwn=!p.vendorId||p.vendorId==='mia';
+  const letter=(p.name||'?')[0].toUpperCase();
+  const imgH=p.photo&&p.photo.length>5?`<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;"/>`:`<span class="p-letter" style="color:${ci.c};">${letter}</span>`;
+  const delH=del===0?`<span class="del-free">&#128666; FREE</span>`:`<span class="del-paid">&#128666; Rs.${del}</span>`;
+  // Offer calculation
+  const offer=Number(p.offer)||0;
+  const offerName=p.offerName||'';
+  const origPrice=offer>0?Math.round(p.price/(1-offer/100)):0;
+  const offerH=offer>0?`
+    <div class="p-offer-wrap">
+      <div class="p-offer-top">
+        <span class="p-offer-badge">&#127381; ${offer}% OFF</span>
+        <span class="p-offer-orig">Rs.${origPrice}</span>
+        ${offerName?`<span class="p-offer-name">${offerName}</span>`:''}
+      </div>
+      <div class="p-offer-bar-wrap">
+        <div class="p-offer-bar" style="width:${Math.min(offer,90)}%;"></div>
+      </div>
+    </div>`:'';
+  // Stars
+  const rating=Number(p.rating)||0;
+  const starsH=rating>0?`<div class="p-stars">${[1,2,3,4,5].map(s=>`<span class="star${s<=rating?'':' empty'}">&#9733;</span>`).join('')}<span style="font-size:9px;color:var(--muted);margin-left:3px;">(${rating})</span></div>`:'';
+  return `<div class="pcard${q>0?' sel':''}${isLocal?' local-p':''}" id="pc${p.id}" onclick="openPdModal('${p.id}')" style="cursor:pointer;">
+    <div class="p-img">${imgH}<div class="p-cdot" style="background:${ci.c};"></div>${isLocal?'<div class="p-localbadge">LOCAL</div>':''}${offer>0?`<div style="position:absolute;top:4px;right:4px;background:#ff4444;color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:6px;">${offer}%</div>`:''}</div>
+    <div class="p-body">
+      <div class="p-top">
+        <div class="p-name">${p.name}</div>
+        <div class="p-price">Rs.${p.price} <span class="p-unit">/ ${ulbl(p.unit)}</span></div>
+        ${offerH}
+        ${starsH}
+        <div class="p-del">${delH}</div>
+        <div class="p-shopname">${isOwn?SHOP:p.shopName}</div>
+      </div>
+      <div class="p-bot">
+        <div class="p-sub" id="sub${p.id}">${q>0?'Rs.'+(q*p.price):''}</div>
+        <div class="qty-row" onclick="event.stopPropagation()">
+          <div class="qb" onclick="chg('${p.id}',-1)">&#8722;</div>
+          <div class="qv" id="qv${p.id}">${q}</div>
+          <div class="qb" onclick="chg('${p.id}',1)">+</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function chg(id,d){
+  qty[id]=Math.max(0,(qty[id]||0)+d);
+  const p=prods.find(x=>String(x.id)===String(id));if(!p)return;
+  const q=qty[id];
+  const qEl=document.getElementById('qv'+id),sEl=document.getElementById('sub'+id),cEl=document.getElementById('pc'+id);
+  if(qEl)qEl.textContent=q;
+  if(sEl)sEl.textContent=q>0?'Rs.'+(q*p.price):'';
+  if(cEl){const isL=cEl.classList.contains('local-p');cEl.className='pcard'+(q>0?' sel':'')+(isL?' local-p':'');}
+  updateCartBar();
+}
+
+function updateCartBar(){
+  const bar=document.getElementById('cartBar');
+  const sel=prods.filter(p=>qty[p.id]>0&&p.approved);
+  if(!sel.length){bar.classList.remove('show');return;}
+  bar.classList.add('show');
+  let total=0,items=0;
+  sel.forEach(p=>{total+=qty[p.id]*p.price+(Number(p.delivery)||0);items+=qty[p.id];});
+  document.getElementById('cartCnt').textContent=items+' item'+(items>1?'s':'');
+  document.getElementById('cartTotal').textContent='Rs. '+total;
+}
+
+// PROFILE
+function onNameInp(v){const av=document.getElementById('spAv');if(av)av.textContent=v?v[0].toUpperCase():'?';const sn=document.getElementById('spName');if(sn)sn.textContent=v||'Aapka Naam';}
+function loadSavedProfile(){
+  const n=localStorage.getItem('zpx_cName'),ph=localStorage.getItem('zpx_cPhone'),a=localStorage.getItem('zpx_cAddr'),pin=localStorage.getItem('zpx_pin')||curPin;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e&&v)e.value=v;};
+  set('cName',n);set('cPhone',ph);set('cAddr',a);
+  if(pin){set('cPin',pin);onProfPin(pin);}
+  if(n)onNameInp(n);
+  const ph2=document.getElementById('spSub');if(ph2)ph2.textContent=ph?ph:'Details bharo, order ke liye';
+  if(n)showProfSaved();else showProfEdit();
+}
+function saveProfile(){
+  const n=document.getElementById('cName').value.trim();
+  const ph=document.getElementById('cPhone').value.trim();
+  const a=document.getElementById('cAddr').value.trim();
+  if(n)localStorage.setItem('zpx_cName',n);
+  if(ph)localStorage.setItem('zpx_cPhone',ph);
+  if(a)localStorage.setItem('zpx_cAddr',a);
+  onNameInp(n);
+  showProfSaved();
+  toast('Profile save ho gayi!','ok');
+}
+function showProfSaved(){
+  const n=localStorage.getItem('zpx_cName'),ph=localStorage.getItem('zpx_cPhone'),a=localStorage.getItem('zpx_cAddr');
+  if(!n&&!ph&&!a){showProfEdit();return;}
+  document.getElementById('profSaved').style.display='block';
+  document.getElementById('profEdit').style.display='none';
+  let html='';
+  if(n)html+=`<div><b>${n}</b></div>`;
+  if(ph)html+=`<div>&#128222; ${ph}</div>`;
+  if(a)html+=`<div>&#128205; ${a}</div>`;
+  if(curArea)html+=`<div>&#128204; ${curArea}</div>`;
+  document.getElementById('profSavedDet').innerHTML=html;
+}
+
+function saveProfileAndGo(){
+  saveProfile();
+  // Profile save hone ke baad panel close karo aur shop dikhao
+  setTimeout(()=>{
+    closeProfile();
+    showView('shop');
+    toast('Profile save! Ab shop dekhein.','ok');
+  },300);
+}
+function showProfEdit(){document.getElementById('profSaved').style.display='none';document.getElementById('profEdit').style.display='block';}
+function openProfile(){loadSavedProfile();renderMyOrders();document.getElementById('overlay').classList.add('show');document.getElementById('sidePanel').classList.add('show');}
+function closeProfile(){document.getElementById('overlay').classList.remove('show');document.getElementById('sidePanel').classList.remove('show');}
+function renderMyOrders(){
+  const el=document.getElementById('spOrders');
+  try{
+    const saved=JSON.parse(localStorage.getItem('zpx_myOrders')||'[]');
+    if(!saved.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;">Koi order nahi abhi.</div>';return;}
+    el.innerHTML=saved.slice(-3).reverse().map(o=>`<div class="my-order-card"><div style="font-size:12px;font-weight:600;color:var(--sky2);">${o.id}</div><div style="font-size:11px;color:var(--muted);">${o.date} &bull; Rs.${o.total}</div></div>`).join('');
+  }catch(e){el.innerHTML='<div style="color:var(--muted);font-size:12px;">Koi order nahi.</div>';}
+}
+
+// SHARE
+function doShare(){const url=window.location.href;if(navigator.share)navigator.share({title:SHOP,url}).then(()=>toast('Share ho gaya!','ok')).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(url).then(()=>toast('Link copy ho gaya!','ok'));else prompt('Yeh link share karo:',url);}
+
+// ORDER MODAL
+function openModal(){
+  const sel=prods.filter(p=>qty[p.id]>0&&p.approved);
+  if(!sel.length){toast('Pehle product select karein!','err');return;}
+  const n=localStorage.getItem('zpx_cName')||'',ph=localStorage.getItem('zpx_cPhone')||'',a=localStorage.getItem('zpx_cAddr')||'';
+  let infoHtml='';
+  if(n)infoHtml+=`<div><b>${n}</b></div>`;else infoHtml+=`<div style="color:var(--warn);">Naam nahi diya</div>`;
+  if(ph)infoHtml+=`<div>&#128222; ${ph}</div>`;
+  if(a)infoHtml+=`<div>&#128205; ${a}</div>`;
+  if(curArea)infoHtml+=`<div>&#128204; ${curArea}</div>`;
+  const ci=document.getElementById('mCustInfo');ci.innerHTML=infoHtml;ci.className='minfo'+(n?'':' warn');
+  let pt=0,dt=0,html='';
+  sel.forEach(p=>{const q=qty[p.id],sub=q*p.price,del=Number(p.delivery)||0;pt+=sub;dt+=del;const ds=del===0?'<span style="color:var(--ok);font-size:9px;"> FREE</span>':`<span style="color:var(--warn);font-size:9px;"> +Rs.${del}</span>`;html+=`<div class="mrow"><span>${p.name} x${q}</span><span>Rs.${sub}${ds}</span></div>`;});
+  if(dt>0)html+=`<div class="mrow" style="color:var(--muted);"><span>Delivery</span><span style="color:var(--warn);">Rs.${dt}</span></div>`;
+  document.getElementById('mRows').innerHTML=html;
+  document.getElementById('mTotal').textContent='Rs.'+(pt+dt);
+  document.getElementById('orderModal').classList.add('show');
+}
+function closeModal(){document.getElementById('orderModal').classList.remove('show');}
+
+async function sendWA(){
+  const sel=prods.filter(p=>qty[p.id]>0&&p.approved);
+  const n=localStorage.getItem('zpx_cName')||'Customer';
+  const ph=localStorage.getItem('zpx_cPhone')||'N/A';
+  const a=localStorage.getItem('zpx_cAddr')||'N/A';
+  const now=new Date(),ordId='ORD-'+Date.now().toString().slice(-6);
+  let pt=0,dt=0,items=[];
+  const lines=sel.map(p=>{const q=qty[p.id],sub=q*p.price,del=Number(p.delivery)||0;pt+=sub;dt+=del;items.push({name:p.name,qty:q,price:p.price,delivery:del,shop:p.shopName});return `  * ${p.name} (${p.cat}) x${q} = Rs.${sub}${del>0?' + Rs.'+del+' del':' (Free del)'}`;}).join('\n');
+  const grand=pt+dt;
+  const msg=`*${SHOP} Order*\n${ordId}\nDate: ${now.toLocaleDateString('hi-IN')}\n${curArea?'Area: '+curArea+'\n':''}\nCustomer: ${n}\nPhone: ${ph}\nAddress: ${a}\n\nOrder:\n${lines}\n\nProducts: Rs.${pt}\nDelivery: Rs.${dt}\n*Total: Rs.${grand}*`;
+  try{await apiPost({action:'addOrder',orderId:ordId,date:now.toLocaleDateString('hi-IN'),time:now.toLocaleTimeString('hi-IN',{hour:'2-digit',minute:'2-digit'}),name:n,phone:ph,addr:a,pincode:curPin,area:curArea,items,productsTotal:pt,deliveryTotal:dt,grandTotal:grand});}catch(e){}
+  try{const myO=JSON.parse(localStorage.getItem('zpx_myOrders')||'[]');myO.push({id:ordId,date:now.toLocaleDateString('hi-IN'),total:grand});if(myO.length>10)myO.splice(0,myO.length-10);localStorage.setItem('zpx_myOrders',JSON.stringify(myO));}catch(e){}
+  if(!MIA_WA){toast('Admin se contact karein.','err');return;}
+  closeModal();
+  setTimeout(()=>window.open('https://wa.me/'+MIA_WA+'?text='+encodeURIComponent(msg),'_blank'),100);
+  toast('Order bhej diya!','ok');
+}
+
+// VENDOR
+
+async function vendorLogin(){
+  const phone=document.getElementById('vLPhone').value.trim(),pin=document.getElementById('vLPin').value.trim();
+  if(!phone){toast('Phone daalo!','err');return;}if(!pin){toast('PIN daalo!','err');return;}
+  try{const r=await apiPost({action:'vendorLogin',phone,pin});if(!r.ok){toast(r.msg||'Phone ya PIN galat!','err');return;}curVendor=r.vendor;renderVendorView();toast('Welcome '+curVendor.shopName+'!','ok');}catch(e){toast('Internet check karein.','err');}
+}
+function vendorLogout(){curVendor=null;renderVendorView();}
+function renderVendorView(){
+  const lock=document.getElementById('vLock'),panel=document.getElementById('vPanel');
+  if(!curVendor){lock.style.display='block';panel.style.display='none';return;}
+  lock.style.display='none';panel.style.display='block';
+  document.getElementById('vTitle').textContent=curVendor.shopName;
+  const sm={pending:{c:'var(--warn)',t:'Pending - Admin approval ka wait karein'},approved:{c:'var(--ok)',t:'Active - Products add kar sakte hain!'},rejected:{c:'var(--err)',t:'Rejected - Admin se contact karein'}};
+  const st=sm[curVendor.status]||sm.pending;
+  document.getElementById('vInfoBox').innerHTML=`<div style="font-family:'Playfair Display',serif;font-size:15px;color:var(--sky2);">&#127978; ${curVendor.shopName}</div><div style="color:var(--muted);font-size:12px;margin-top:3px;">${curVendor.ownerName}</div><div style="color:${st.c};font-size:12px;font-weight:700;margin-top:6px;">${st.t}</div>`;
+  renderMyVProds();
+}
+function vTab(n){document.querySelectorAll('[id^="vt"]').forEach((t,i)=>t.className='ptab'+(i+1===n?' on':''));document.getElementById('vMyProds').style.display=n===1?'block':'none';document.getElementById('vAddProd').style.display=n===2?'block':'none';}
+function renderMyVProds(){
+  const list=document.getElementById('myProdList');
+  const mine=prods.filter(p=>curVendor&&String(p.vendorId)===String(curVendor.id));
+  if(!mine.length){list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);">Koi product nahi. Add tab se karein.</div>';return;}
+  list.innerHTML=mine.map(p=>{
+    const offer=Number(p.offer)||0;
+    const offerName=p.offerName||'';
+    return `<div class="my-pc" style="flex-direction:column;align-items:stretch;gap:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="my-pc-img">${p.photo&&p.photo.length>5?`<img src="${p.photo}"/>`:`<span style="font-size:20px;font-weight:900;color:${getCat(p.cat).c};">${(p.name||'?')[0].toUpperCase()}</span>`}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${p.name}</div>
+          <div style="font-size:11px;color:var(--muted);">Rs.${p.price} / ${ulbl(p.unit)} &bull; ${p.cat}</div>
+          ${offer>0?`<div style="font-size:10px;color:#ff6b35;font-weight:700;">&#127381; ${offer}% OFF ${offerName?'— '+offerName:''}</div>`:'<div style="font-size:10px;color:var(--muted);">Koi offer nahi</div>'}
+          <div style="font-size:10px;font-weight:700;margin-top:2px;color:${p.approved?'var(--ok)':'var(--warn)'};">${p.approved?'&#9989; Live':'&#9203; Pending'}</div>
+        </div>
+      </div>
+      <!-- OFFER EDIT BAR -->
+      <div style="border-top:1px dashed var(--border);margin-top:8px;padding-top:8px;">
+        <div style="font-size:10px;color:var(--sky2);font-weight:700;margin-bottom:6px;">&#127381; Offer Edit Karein</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <button onclick="changeOffer('${p.id}',-5)" style="width:30px;height:30px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">&#8722;</button>
+          <div style="flex:1;text-align:center;font-size:18px;font-weight:900;color:${offer>0?'#ff4444':'var(--muted)'};" id="offerPct_${p.id}">${offer}%</div>
+          <button onclick="changeOffer('${p.id}',5)" style="width:30px;height:30px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">+</button>
+          ${offer>0?`<button onclick="saveOffer('${p.id}')" style="padding:6px 12px;background:var(--ok);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">Save</button>`:''}
+        </div>
+        <!-- OFFER BAR -->
+        ${offer>0?`<div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:6px;"><div style="width:${Math.min(offer,90)}%;height:100%;background:linear-gradient(90deg,#ff4444,#ff6b35);border-radius:3px;"></div></div>`:''}
+        <!-- STICKER NAME -->
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input id="stickerInp_${p.id}" type="text" placeholder="Sticker naam: Holi Sale, New Stock..." value="${offerName}" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:11px;outline:none;"/>
+          <button onclick="saveOffer('${p.id}')" style="padding:7px 12px;background:var(--sky);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">&#9998; Save</button>
+        </div>
+        <div style="font-size:9px;color:var(--muted);margin-top:4px;">Offer 0% = no offer. Sticker naam product pe dikhega.</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Offer +/- buttons
+const offerDraft = {};
+function changeOffer(pid, delta){
+  if(!offerDraft[pid]) offerDraft[pid] = Number(prods.find(p=>String(p.id)===String(pid))?.offer)||0;
+  offerDraft[pid] = Math.max(0, Math.min(90, offerDraft[pid]+delta));
+  const el = document.getElementById('offerPct_'+pid);
+  if(el){ el.textContent=offerDraft[pid]+'%'; el.style.color=offerDraft[pid]>0?'#ff4444':'var(--muted)';}
+}
+
+async function saveOffer(pid){
+  const offer = offerDraft[pid] !== undefined ? offerDraft[pid] : Number(prods.find(p=>String(p.id)===String(pid))?.offer)||0;
+  const stickerEl = document.getElementById('stickerInp_'+pid);
+  const offerName = stickerEl ? stickerEl.value.trim() : '';
+  const r = await apiPost({action:'updateOffer', id:pid, offer, offerName});
+  if(r.ok){
+    await loadAll();
+    renderMyVProds();
+    toast('Offer save ho gaya! '+offer+'%'+(offerName?' — '+offerName:''),'ok');
+  } else {
+    // Update locally in demo mode
+    const p = prods.find(x=>String(x.id)===String(pid));
+    if(p){ p.offer=offer; p.offerName=offerName; }
+    renderMyVProds();
+    renderProds();
+    toast('Offer update ho gaya! '+offer+'%','ok');
+  }
+  delete offerDraft[pid];
+}
+async function vendorAddProd(){
+  if(!curVendor){toast('Login karein!','err');return;}if(curVendor.status!=='approved'){toast('Account pending hai!','err');return;}
+  const name=document.getElementById('vNName').value.trim(),price=parseFloat(document.getElementById('vNPrice').value)||0,del=parseFloat(document.getElementById('vNDel').value)||0,unit=document.getElementById('vNUnit').value;
+  if(!name){toast('Naam daalo!','err');return;}if(!price){toast('Price daalo!','err');return;}if(!vCat){toast('Category select karein!','err');return;}
+  const vOffer=parseFloat(document.getElementById('vNOffer').value)||0;
+  const vOfferName=document.getElementById('vNOfferName').value.trim();
+  const r=await apiPost({action:'addProduct',name,price,delivery:del,unit,cat:vCat,photo:vPhoto||'',vendorId:curVendor.id,shopName:curVendor.shopName,approved:false,desc:document.getElementById('vNDesc').value||'',pincode:curVendor.pincode||'',offer:vOffer,offerName:vOfferName});
+  if(!r.ok){toast('Error! Dobara try karein.','err');return;}
+  toast('Submit! Admin approve karega.','ok');
+  ['vNName','vNPrice','vNDesc'].forEach(id=>document.getElementById(id).value='');document.getElementById('vNDel').value='0';
+  resetPhoto('vPhPrev','vPhPh','vPhIn');document.querySelectorAll('#vCpills .cp').forEach(p=>{p.classList.remove('on');p.style.background='var(--bg)';p.style.borderWidth='1.5px';});vCat=null;vPhoto=null;
+  await loadAll();renderMyVProds();vTab(1);
+}
+
+// ADMIN
+function checkAdminPin(){
+  const entered=document.getElementById('pinInp').value;
+  const saved=getAPin();
+  if(entered===saved){
+    document.getElementById('adminLock').style.display='none';document.getElementById('adminPanel').style.display='block';
+    loadAll().then(()=>renderAdmin());toast('Welcome Admin!','ok');
+  }else{toast('Galat PIN!','err');document.getElementById('pinInp').value='';}
+}
+function adminLogout(){document.getElementById('adminLock').style.display='block';document.getElementById('adminPanel').style.display='none';document.getElementById('pinInp').value='';document.getElementById('aOwner').textContent='';MIA_WA='';}
+function togglePinChg(){document.getElementById('pinChgBox').classList.toggle('show');}
+function changeAdminPin(){
+  const old=document.getElementById('oldPin').value,nw=document.getElementById('newPin').value,cf=document.getElementById('cfmPin').value,saved=getAPin();
+  if(old!==saved){toast('Purana PIN galat!','err');return;}if(nw.length!==6){toast('6 digit chahiye!','err');return;}if(nw!==cf){toast('PIN match nahi kiya!','err');return;}if(nw===old){toast('Naya PIN alag hona chahiye!','err');return;}
+  localStorage.setItem('zpx_apin',nw);togglePinChg();['oldPin','newPin','cfmPin'].forEach(id=>document.getElementById(id).value='');toast('PIN badal gaya! Naya: '+nw,'ok');
+}
+function renderAdmin(){
+  const live=prods.filter(p=>p.approved).length,pend=prods.filter(p=>!p.approved).length,vp=vendors.filter(v=>v.status==='pending').length;
+  document.getElementById('vBadge').textContent=vp||0;
+  document.getElementById('aStats').innerHTML=`<div class="sbox"><div class="sn">${live}</div><div class="sl">Live</div></div><div class="sbox" style="border-color:var(--warn)44;"><div class="sn" style="color:var(--warn);">${pend}</div><div class="sl">Pending</div></div><div class="sbox" style="border-color:var(--ok)44;"><div class="sn" style="color:var(--ok);">${vendors.filter(v=>v.status==='approved').length}</div><div class="sl">Shops</div></div><div class="sbox"><div class="sn">${orders.length}</div><div class="sl">Orders</div></div>`;
+  renderAProds();
+}
+function aTab(n){document.querySelectorAll('[id^="at"]').forEach((t,i)=>t.className='ptab'+(i+1===n?' on':''));['aProds','aShops','aOrders','aCats','aAdd'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.style.display=i+1===n?'block':'none';});if(n===2)renderAShops();if(n===3)renderAOrders();if(n===4)renderCatMgr();}
+function aFilter(f,el){afilt=f;document.querySelectorAll('[data-af]').forEach(t=>{t.classList.remove('on');t.style.background='';t.style.borderColor='';t.style.color='';});el.classList.add('on');renderAProds();}
+function renderAProds(){
+  selProds.clear();updateBulkBar();
+  const list=document.getElementById('aProdList');
+  let p=[...prods];if(afilt==='pending')p=p.filter(x=>!x.approved);else if(afilt==='live')p=p.filter(x=>x.approved);
+  if(!p.length){list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);">Koi product nahi.</div>';return;}
+  list.innerHTML=p.map(x=>{
+    const ci=getCat(x.cat);
+    const img=x.photo&&x.photo.length>5?`<img src="${x.photo}" style="width:100%;height:100%;object-fit:cover;"/>`:`<span style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:${ci.c};">${(x.name||'?')[0].toUpperCase()}</span>`;
+    return `<div class="arow" id="apr${x.id}" onclick="toggleProdSel('${x.id}',this)" style="cursor:pointer;">
+      <div class="arow-img">${img}</div>
+      <div class="arow-info">
+        <div class="arow-name">${x.name}</div>
+        <div class="arow-det" style="color:${ci.c};">&#9679; ${x.cat} | Rs.${x.price} | Del:${(Number(x.delivery)||0)===0?'Free':'Rs.'+x.delivery}</div>
+        <div style="font-size:10px;color:var(--muted);">&#127978; ${x.shopName} ${x.approved?'<span style="color:var(--ok)">&#9989; Live</span>':'<span style="color:var(--warn)">&#9203; Pending</span>'}</div>
+      </div>
+      <div class="arow-acts" onclick="event.stopPropagation()">
+        ${!x.approved?`<button class="abtn ok" onclick="approveProd('${x.id}')">&#9989;</button>`:''}
+        <button class="abtn del" onclick="delProd('${x.id}')">&#128465;</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function approveProd(id){const r=await apiPost({action:'approveProduct',id});if(r.ok){await loadAll();renderAdmin();toast('Live ho gaya!','ok');}else toast('Error!','err');}
+async function delProd(id){if(!confirm('Delete karein?'))return;const r=await apiPost({action:'deleteProduct',id});if(r.ok){await loadAll();renderAdmin();toast('Deleted!','info');}else toast('Error!','err');}
+function renderAShops(){
+  const list=document.getElementById('aShopList');
+  if(!vendors.length){list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);">Koi vendor nahi.</div>';return;}
+  const sm={pending:{c:'var(--warn)',t:'Pending — Approve karein'},approved:{c:'var(--ok)',t:'Active'},rejected:{c:'var(--err)',t:'Rejected'}};
+  list.innerHTML=vendors.map(v=>{
+    const st=sm[v.status]||sm.pending;
+    const hasPinAssigned = v.pin && v.pin!=='PENDING';
+    return `<div class="vcard" style="border-left:3px solid ${st.c};">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--sky2));display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:#fff;flex-shrink:0;">${v.shopName[0].toUpperCase()}</div>
+        <div><div class="vcard-name">&#127978; ${v.shopName}</div><div style="font-size:10px;color:${st.c};font-weight:700;">${st.t}</div></div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:10px;margin-bottom:8px;font-size:12px;line-height:1.8;">
+        <div>&#128100; <b>${v.ownerName}</b></div>
+        <div>&#128241; ${v.phone}</div>
+        ${v.email?`<div>&#128231; ${v.email}</div>`:''}
+        ${v.area?`<div>&#128205; ${v.area}</div>`:''}
+        ${v.shopType?`<div>&#127873; ${v.shopType}</div>`:''}
+        ${v.pincode?`<div>&#128204; Pincode: ${v.pincode}</div>`:''}
+      </div>
+      <div class="vcard-st" style="color:${st.c};display:none;">${st.t}</div>
+      ${v.pin&&v.pin!=='PENDING'?`<div style="font-size:11px;color:var(--ok);margin-top:3px;">PIN assigned: ${v.pin}</div>`:`<div style="font-size:11px;color:var(--warn);margin-top:3px;">PIN: Assign karna hai</div>`}
+      <div class="vcard-acts" style="flex-wrap:wrap;gap:6px;">
+        ${v.status==='pending'?
+          `<button class="abtn ok" onclick="approveShopWithPin('${v.id}','${v.shopName}')">&#9989; Approve + PIN</button>
+           <button class="abtn del" onclick="rejectShop('${v.id}')">&#10060; Reject</button>`:
+          v.status==='approved'?
+          `<button class="abtn ok" onclick="assignVendorPin('${v.id}','${v.shopName}')">&#128273; PIN Change</button>
+           <button class="abtn del" onclick="rejectShop('${v.id}')">&#10060; Revoke</button>`:
+          `<button class="abtn ok" onclick="approveShopWithPin('${v.id}','${v.shopName}')">&#9989; Re-Approve</button>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Approve shop — no PIN from admin, vendor sets own
+
+async function approveShop(id){const r=await apiPost({action:'approveVendor',id});if(r.ok){await loadAll();renderAShops();renderAdmin();toast('Approved!','ok');}else toast('Error!','err');}
+async function rejectShop(id){const r=await apiPost({action:'rejectVendor',id});if(r.ok){await loadAll();renderAShops();renderAdmin();toast('Done.','info');}else toast('Error!','err');}
+function renderAOrders(){
+  const el=document.getElementById('aOrderList');
+  if(!orders.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);">Koi order nahi.</div>';return;}
+  el.innerHTML='<table class="otbl"><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th></tr>'+[...orders].reverse().map(o=>`<tr><td><b style="color:var(--sky2);">${o.id||''}</b><br/><small style="color:var(--muted);">${o.date||''}</small>${o.area?'<br/><small style="color:var(--sky3);">&#128205;'+o.area+'</small>':''}</td><td>${o.name||''}<br/><small style="color:var(--muted);">${o.phone||''}</small></td><td><b style="color:var(--sky2);">Rs.${o.grandTotal||0}</b>${Number(o.deliveryTotal)>0?'<br/><small style="color:var(--warn);">+Rs.'+o.deliveryTotal+' del</small>':''}</td><td><select onchange="updOrdSt('${o.id}',this.value)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);font-size:11px;border-radius:8px;padding:4px 7px;outline:none;"><option ${o.status==='Pending'?'selected':''}>Pending</option><option ${o.status==='Delivered'?'selected':''}>Delivered</option><option ${o.status==='Cancelled'?'selected':''}>Cancelled</option></select></td></tr>`).join('')+'</table>';
+}
+async function updOrdSt(id,s){await apiPost({action:'updateOrderStatus',id,status:s});toast('Status updated!','info');}
+async function adminAddProd(){
+  const name=document.getElementById('aNName').value.trim(),price=parseFloat(document.getElementById('aNPrice').value)||0,del=parseFloat(document.getElementById('aNDel').value)||0,unit=document.getElementById('aNUnit').value;
+  const offer=parseFloat(document.getElementById('aNOffer').value)||0;
+  const offerName=document.getElementById('aNOfferName').value.trim();
+  const rating=parseFloat(document.getElementById('aNRating').value)||0;
+  if(!name){toast('Naam daalo!','err');return;}if(!price){toast('Price daalo!','err');return;}if(!aCat){toast('Category select karein!','err');return;}
+  const r=await apiPost({action:'addProduct',name,price,delivery:del,unit,cat:aCat,photo:aPhoto||'',vendorId:'mia',shopName:SHOP,approved:true,offer,offerName,rating});
+  if(!r.ok){toast('Error!','err');return;}
+  toast('Live ho gaya!','ok');document.getElementById('aNName').value='';document.getElementById('aNPrice').value='';document.getElementById('aNDel').value='0';
+  resetPhoto('aPhPrev','aPhPh','aPhIn');document.querySelectorAll('#aCpills .cp').forEach(p=>{p.classList.remove('on');p.style.background='var(--bg)';p.style.borderWidth='1.5px';});aCat=null;aPhoto=null;
+  await loadAll();renderAdmin();aTab(1);
+}
+
+// CATEGORIES
+function renderCatMgr(){
+  const cats=getCats();const list=document.getElementById('catMgrList');
+  list.innerHTML=cats.length?cats.map((c,i)=>`<div class="citem"><div class="citem-color" style="background:${c.c};"></div><div class="citem-name">${c.n}</div><button class="abtn del" onclick="deleteCat(${i})">&#128465;</button></div>`).join(''):'<div style="color:var(--muted);font-size:12px;text-align:center;">Koi category nahi. Neeche add karein.</div>';
+  const sw=document.getElementById('colorSw');if(sw)sw.innerHTML=CAT_COLORS.map((c,i)=>`<div class="sw${i===selCI?' on':''}" style="background:${c.h};" onclick="pickColor(${i})"></div>`).join('');
+}
+function pickColor(i){selCI=i;document.querySelectorAll('.sw').forEach((s,j)=>s.classList.toggle('on',j===i));}
+function addCategory(){
+  const name=document.getElementById('newCatName').value.trim();
+  if(!name){toast('Naam daalo!','err');return;}
+  const cats=getCats();if(cats.find(c=>c.n&&c.n.toLowerCase()===name.toLowerCase())){toast('Pehle se hai!','err');return;}
+  const col=CAT_COLORS[selCI]||CAT_COLORS[0];cats.push({n:name,c:col.h,b:col.b});saveCats(cats);
+  document.getElementById('newCatName').value='';renderCatMgr();renderCatTabs();renderAdmin();
+  toast('Category add: '+name,'ok');
+}
+function deleteCat(i){
+  const cats=getCats(),cat=cats[i];
+  if(prods.filter(p=>p.approved&&p.cat===cat.n).length>0){toast(cat.n+' mein products hain! Pehle hatao.','err');return;}
+  if(!confirm(cat.n+' delete karein?'))return;
+  cats.splice(i,1);saveCats(cats);renderCatMgr();renderCatTabs();renderAdmin();toast('Deleted!','info');
+}
+
+// PHOTO
+function prevPhoto(prevId,phId,e,who){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();r.onload=ev=>{const data=ev.target.result;if(who==='v')vPhoto=data;else aPhoto=data;const pr=document.getElementById(prevId);pr.src=data;pr.style.display='block';document.getElementById(phId).style.display='none';};r.readAsDataURL(file);
+}
+function resetPhoto(pv,ph,pi){const pr=document.getElementById(pv);if(pr){pr.src='';pr.style.display='none';}const phEl=document.getElementById(ph);if(phEl)phEl.style.display='block';const inp=document.getElementById(pi);if(inp)inp.value='';}
+
+// INIT
+(function(){
+  curLang=localStorage.getItem('zpx_lang')||'hi';
+  curPin=localStorage.getItem('zpx_pin')||'';
+  curArea=city(curPin);
+  applyLang();applyTheme();
+  document.querySelectorAll('.lang-btn').forEach(el=>el.classList.toggle('active',el.dataset.l===curLang));
+  if(curPin){const sp=document.getElementById('setupPin');if(sp){sp.value=curPin;onSetupPin(curPin);}}
+  document.getElementById('setup').style.display='flex';
+  document.getElementById('app').style.display='none';
+  prods=getDemos();
+  setTimeout(()=>{renderCatTabs();renderProds();},100);
+  setTimeout(loadAll,600);
+})();
+
+
+// ── AUTH METHOD SELECTION ──
+let curAuthMethod = 'bio';
+
+function selectAuth(method){
+  curAuthMethod = method;
+  // Reset bio and pin only (no 'none')
+  ['bio','pin'].forEach(m => {
+    const btn = document.getElementById('auth'+m.charAt(0).toUpperCase()+m.slice(1));
+    const box = document.getElementById('auth'+m.charAt(0).toUpperCase()+m.slice(1)+'Box');
+    if(btn){ btn.style.background='var(--card)'; btn.style.color='var(--muted)'; btn.style.borderColor='var(--border)';}
+    if(box) box.style.display='none';
+  });
+  const selBtn = document.getElementById('auth'+method.charAt(0).toUpperCase()+method.slice(1));
+  const selBox = document.getElementById('auth'+method.charAt(0).toUpperCase()+method.slice(1)+'Box');
+  if(selBtn){ selBtn.style.background='var(--sky)'; selBtn.style.color='#fff'; selBtn.style.borderColor='var(--sky)';}
+  if(selBox) selBox.style.display='block';
+  localStorage.setItem('zpx_vAuthMethod', method);
+}
+
+function onVLoginPhone(v){
+  const clean = v.trim().replace(/\s/g,'');
+  // Check if this phone has set a PIN
+  const hasPin = localStorage.getItem('zpx_vpin_'+clean);
+  const savedMethod = localStorage.getItem('zpx_vAuth_'+clean) || 'bio';
+  // Show first-time PIN setup if approved but no PIN set
+  const vendor = vendors.find(x=>x.phone===clean);
+  if(vendor && vendor.status==='approved' && !hasPin){
+    document.getElementById('vFirstTimeBox').style.display='block';
+  } else {
+    document.getElementById('vFirstTimeBox').style.display='none';
+  }
+  selectAuth(savedMethod);
+}
+
+// ── SET VENDOR OWN PIN (first time) ──
+function setVendorOwnPin(){
+  const phone = document.getElementById('vLPhone').value.trim().replace(/\s/g,'');
+  const pin1 = document.getElementById('vNewPin1').value;
+  const pin2 = document.getElementById('vNewPin2').value;
+  if(!phone){ toast('Phone daalen pehle!','err'); return; }
+  if(pin1.length!==4){ toast('4 digit PIN chahiye!','err'); return; }
+  if(pin1!==pin2){ toast('PIN match nahi kiya!','err'); return; }
+  // Save PIN locally (encrypted with phone as key)
+  const encoded = btoa(phone+'::'+pin1); // Simple encoding
+  localStorage.setItem('zpx_vpin_'+phone, encoded);
+  localStorage.setItem('zpx_vAuth_'+phone, 'pin');
+  document.getElementById('vFirstTimeBox').style.display='none';
+  selectAuth('pin');
+  document.getElementById('vLPin').value='';
+  toast('PIN set ho gaya! Ab login karein.','ok');
+}
+
+// ── BIOMETRIC LOGIN ──
+async function bioLogin(){
+  const phone = document.getElementById('vLPhone').value.trim();
+  if(!phone){ toast('Phone daalen pehle!','err'); return; }
+  // Check if WebAuthn available
+  if(window.PublicKeyCredential){
+    try{
+      // Use WebAuthn / platform authenticator (fingerprint/face)
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      const cred = await navigator.credentials.get({
+        publicKey:{
+          challenge,
+          timeout:60000,
+          userVerification:'required',
+          rpId: window.location.hostname || 'localhost'
+        }
+      });
+      if(cred){
+        // Biometric verified — login with phone only
+        await doVendorLoginByPhone(phone);
+        // Save that this phone uses bio
+        localStorage.setItem('zpx_vAuth_'+phone, 'bio');
+      }
+    }catch(e){
+      if(e.name==='NotAllowedError'){
+        toast('Biometric cancel kiya. PIN try karein.','err');
+      } else {
+        // Fallback — try login without bio (for devices without WebAuthn)
+        toast('Biometric available nahi. PIN ya No Lock use karein.','err');
+        selectAuth('pin');
+      }
+    }
+  } else {
+    // No WebAuthn support — fallback
+    toast('Yeh device biometric support nahi karta. PIN use karein.','err');
+    selectAuth('pin');
+  }
+}
+
+
+
+
+
+
+
+// ── VENDOR TAB SWITCH ──
+
+
+// ── VENDOR REGISTER (no password) ──
+// Override vendorRegister
+
+
+// ── BULK PRODUCT ACTIONS ──
+let selProds = new Set();
+
+function toggleProdSel(id, el){
+  if(selProds.has(id)){selProds.delete(id);el.style.outline='';}
+  else{selProds.add(id);el.style.outline='2px solid var(--sky)';}
+  updateBulkBar();
+}
+
+function updateBulkBar(){
+  const bar=document.getElementById('bulkProdBar');
+  const cnt=document.getElementById('bulkProdCount');
+  if(selProds.size>0){bar.style.display='flex';cnt.textContent=selProds.size+' selected';}
+  else bar.style.display='none';
+}
+
+function clearProdSel(){selProds.clear();renderAProds();}
+
+async function bulkApproveProds(){
+  if(!selProds.size)return;
+  for(const id of selProds){await apiPost({action:'approveProduct',id});}
+  selProds.clear();await loadAll();renderAdmin();toast(selProds.size+' products live!','ok');
+}
+
+async function bulkDeleteProds(){
+  if(!selProds.size)return;
+  if(!confirm(selProds.size+' products delete karein?'))return;
+  for(const id of selProds){await apiPost({action:'deleteProduct',id});}
+  selProds.clear();await loadAll();renderAdmin();toast('Deleted!','info');
+}
+
+// ── ADMIN FORGOT PIN ──
+function showAdminForgot(){
+  const box=document.getElementById('adminForgotBox');
+  box.style.display=box.style.display==='none'?'block':'none';
+}
+
+async function recoverAdminPin(){
+  const email=document.getElementById('forgotEmail').value.trim();
+  if(!email){toast('Email daalen!','err');return;}
+  // Check saved admin email in localStorage
+  const savedEmail=localStorage.getItem('zpx_adminEmail')||'zpioxw@gmail.com';
+  if(email.toLowerCase()!==savedEmail.toLowerCase()){
+    toast('Yeh email admin profile mein nahi hai!','err');return;
+  }
+  const pin=getAPin();
+  // Show PIN (in real app would email it)
+  toast('Aapka PIN: '+pin,'ok');
+  document.getElementById('adminForgotBox').style.display='none';
+  // Pre-fill PIN input
+  document.getElementById('pinInp').value=pin;
+}
+
+// ── ADMIN ASSIGN PIN TO VENDOR ──
+async function assignVendorPin(id, shopName){
+  const pin=prompt(''+shopName+' ke liye PIN assign karein (6 digit):');
+  if(!pin||pin.length!==6){toast('6 digit PIN chahiye!','err');return;}
+  const r=await apiPost({action:'assignVendorPin',id,pin});
+  if(r.ok){await loadAll();renderAShops();toast('PIN assign ho gaya: '+pin,'ok');}
+  else toast('Error!','err');
+}
+
+
+// ── STAR PREVIEW ──
+function updateStarPreview(rangeId, prevId){
+  const val=document.getElementById(rangeId).value;
+  const el=document.getElementById(prevId);
+  if(el){
+    const stars=[1,2,3,4,5].map(s=>`<span style="color:${s<=val?'#ffd700':'var(--border)'};">&#9733;</span>`).join('');
+    el.innerHTML=stars+` <span style="font-size:11px;color:var(--sky2);">${val}</span>`;
+  }
+}
+
+// ── VENDOR FORGOT PIN ──
+function showVendorForgot(){
+  const box=document.getElementById('vForgotBox');
+  box.style.display=box.style.display==='none'?'block':'none';
+}
+
+async function vendorForgotPin(){
+  const phone=document.getElementById('vForgotPhone').value.trim();
+  if(!phone){toast('Phone daalo!','err');return;}
+  // Find vendor in loaded vendors list
+  const v=vendors.find(x=>x.phone===phone||x.phone===phone.replace(/\s/g,''));
+  if(!v){toast('Yeh phone registered nahi hai!','err');return;}
+  if(!v.pin||v.pin==='PENDING'){
+    toast('PIN abhi assign nahi hua. Admin se contact karein.','err');return;
+  }
+  // Show PIN
+  document.getElementById('vForgotBox').innerHTML=`
+    <div style="text-align:center;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${v.shopName} ka PIN:</div>
+      <div style="font-size:32px;font-weight:900;color:var(--sky2);letter-spacing:10px;padding:10px;">${v.pin}</div>
+      <div style="font-size:10px;color:var(--muted);">Admin ne assign kiya hai. Kisi ko mat batao.</div>
+    </div>`;
+  // Pre-fill login
+  document.getElementById('vLPhone').value=phone;
+  document.getElementById('vLPin').value=v.pin;
+}
+
+// ── ADMIN: AUTO-GENERATE 4 DIGIT PIN for vendor ──
+async function approveShopWithPin(id, shopName){
+  // Auto-generate 4 digit PIN
+  const pin = String(Math.floor(1000+Math.random()*9000));
+  const confirm_msg = shopName+' ke liye PIN auto-generate hua:\n\n'+
+    '🔑 PIN: '+pin+'\n\n'+
+    'Yeh PIN vendor ko batao (phone/WhatsApp se).\nOK karo approve karne ke liye.';
+  if(!confirm(confirm_msg))return;
+  const r1=await apiPost({action:'approveVendor',id});
+  const r2=await apiPost({action:'assignVendorPin',id,pin});
+  if(r1.ok){
+    await loadAll();renderAShops();renderAdmin();
+    toast(shopName+' Approved! PIN: '+pin,'ok');
+  }else toast('Error!','err');
+}
+
+// ── PROFILE PIN DETECT (Flipkart style) ──
+function onProfPin(v){
+  const clean=v.trim().replace(/\D/g,'');
+  const ct=city(clean);
+  const box=document.getElementById('profPinCity');
+  const txt=document.getElementById('profPinCityTxt');
+  if(ct&&clean.length===6){
+    if(box){box.style.display='block';}
+    if(txt){txt.innerHTML='&#128205; '+ct;}
+    curPin=clean;curArea=ct;
+    localStorage.setItem('zpx_pin',clean);
+    updatePinUI();renderProds();
+  }else if(clean.length===6){
+    if(box)box.style.display='block';
+    if(txt){txt.innerHTML='<span style="color:var(--warn)">Pincode map mein nahi mila</span>';}
+  }else{
+    if(box)box.style.display='none';
+  }
+}
+
+// ── ADMIN: UPDATE adminAddProd to include offer+rating ──
+
+
+// ── PRODUCT DETAIL MODAL ──
+let pdProdId = null;
+
+function openPdModal(id){
+  const p = prods.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  pdProdId = id;
+  const ci = getCat(p.cat);
+  const offer = Number(p.offer)||0;
+  const origPrice = offer>0 ? Math.round(p.price/(1-offer/100)) : 0;
+  const del = Number(p.delivery)||0;
+  const isOwn = !p.vendorId||p.vendorId==='mia';
+  const rating = Number(p.rating)||0;
+  const q = qty[id]||0;
+
+  // Image
+  const imgEl = document.getElementById('pdImg');
+  imgEl.innerHTML = (p.photo&&p.photo.length>5)
+    ? `<img src="${p.photo}"/><button class="pd-close" onclick="closePdModal()">&#10005;</button>`
+    : `<span class="pd-img-letter" style="color:${ci.c};">${(p.name||'?')[0].toUpperCase()}</span><button class="pd-close" onclick="closePdModal()">&#10005;</button>`;
+  imgEl.style.background = ci.b;
+
+  // Details
+  document.getElementById('pdName').textContent = p.name;
+  document.getElementById('pdPrice').textContent = 'Rs.'+p.price+' / '+ulbl(p.unit);
+
+  const origEl = document.getElementById('pdOrig');
+  const offEl  = document.getElementById('pdOff');
+  const offBar = document.getElementById('pdOfferBar');
+  const offFill= document.getElementById('pdOfferFill');
+  const offName= document.getElementById('pdOfferName');
+
+  if(offer>0){
+    origEl.textContent='Rs.'+origPrice; origEl.style.display='block';
+    offEl.textContent=offer+'% OFF';    offEl.style.display='block';
+    offBar.style.display='block';
+    offFill.style.width=Math.min(offer,90)+'%';
+    if(p.offerName){ offName.textContent='&#127381; '+p.offerName; offName.style.display='block';}
+    else offName.style.display='none';
+  }else{
+    origEl.style.display='none';offEl.style.display='none';
+    offBar.style.display='none';offName.style.display='none';
+  }
+
+  // Stars
+  const starsEl=document.getElementById('pdStars');
+  if(rating>0){
+    starsEl.innerHTML='<div class="pd-stars-big">'+
+      [1,2,3,4,5].map(s=>`<span class="pd-star${s<=rating?'':' e'}">&#9733;</span>`).join('')+
+      `<span style="font-size:12px;color:var(--muted);margin-left:5px;">${rating}/5</span>`+
+      '</div>';
+  }else starsEl.innerHTML='';
+
+  // Delivery
+  const delEl=document.getElementById('pdDel');
+  if(del===0){delEl.className='pd-del-badge pd-del-free';delEl.innerHTML='&#128666; Free Delivery';}
+  else{delEl.className='pd-del-badge pd-del-paid';delEl.innerHTML='&#128666; Delivery: Rs.'+del;}
+
+  // Shop
+  document.getElementById('pdShop').innerHTML=(isOwn?SHOP:p.shopName)+(p.cat?' &bull; '+p.cat:'');
+
+  // Description
+  const descEl=document.getElementById('pdDesc');
+  if(p.desc&&p.desc.length>0){descEl.textContent=p.desc;descEl.style.display='block';}
+  else descEl.style.display='none';
+
+  // Qty
+  document.getElementById('pdUnit').textContent=ulbl(p.unit);
+  updatePdQty();
+
+  document.getElementById('pdModal').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+
+function closePdModal(){
+  document.getElementById('pdModal').classList.remove('show');
+  document.body.style.overflow='';
+  pdProdId=null;
+}
+
+function pdChg(d){
+  if(!pdProdId) return;
+  qty[pdProdId]=Math.max(0,(qty[pdProdId]||0)+d);
+  updatePdQty();
+  // Update main card too
+  const p=prods.find(x=>String(x.id)===String(pdProdId));
+  if(p){
+    const q=qty[pdProdId];
+    const qEl=document.getElementById('qv'+pdProdId);
+    const sEl=document.getElementById('sub'+pdProdId);
+    const cEl=document.getElementById('pc'+pdProdId);
+    if(qEl)qEl.textContent=q;
+    if(sEl)sEl.textContent=q>0?'Rs.'+(q*p.price):'';
+    if(cEl){const isL=cEl.classList.contains('local-p');cEl.className='pcard'+(q>0?' sel':'')+(isL?' local-p':'');}
+  }
+  updateCartBar();
+}
+
+function updatePdQty(){
+  const q=qty[pdProdId]||0;
+  const p=prods.find(x=>String(x.id)===String(pdProdId));
+  document.getElementById('pdQty').textContent=q;
+  const sub=document.getElementById('pdSubtotal');
+  if(p&&q>0)sub.textContent='Subtotal: Rs.'+(q*p.price);
+  else sub.textContent='';
+  document.getElementById('pdAddBtn').textContent=q>0?'Cart Update ('+q+')':'Cart mein Add Karein';
+}
+
+function pdAddAndClose(){
+  if(!pdProdId)return;
+  if((qty[pdProdId]||0)===0) pdChg(1);
+  updateCartBar();
+  closePdModal();
+  toast('Cart mein add ho gaya!','ok');
+}
+
+// Close on background click
+document.getElementById('pdModal').addEventListener('click',function(e){if(e.target===this)closePdModal();});
+
+// ── SIMPLE VENDOR LOGIN (no PIN) ──
+
+
+
+// ══════════════════════════════════════════
+// VENDOR — NEW COMPLETE SYSTEM
+// ══════════════════════════════════════════
+
+// Tab switch
+function vSwitchTab(tab){
+  const lf=document.getElementById('vLoginForm');
+  const rf=document.getElementById('vRegForm');
+  const rs=document.getElementById('vRegSuccess');
+  const pb=document.getElementById('vPendingBox');
+  const tl=document.getElementById('vTabLogin');
+  const tr=document.getElementById('vTabReg');
+  // Hide all
+  [lf,rf,rs,pb].forEach(el=>{if(el)el.style.display='none';});
+  if(tab==='login'){
+    if(lf)lf.style.display='block';
+    if(tl){tl.style.background='var(--sky)';tl.style.color='#fff';}
+    if(tr){tr.style.background='transparent';tr.style.color='var(--muted)';}
+  } else {
+    if(rf)rf.style.display='block';
+    if(tr){tr.style.background='var(--sky)';tr.style.color='#fff';}
+    if(tl){tl.style.background='transparent';tl.style.color='var(--muted)';}
+  }
+}
+
+// CHECK DUPLICATE while typing phone in register
+function checkDuplicate(v){
+  const clean=v.trim().replace(/\D/g,'');
+  if(clean.length<10) {
+    document.getElementById('vDupWarn').style.display='none';
+    return;
+  }
+  const matches=vendors.filter(x=>x.phone&&x.phone.replace(/\D/g,'')===clean);
+  const warn=document.getElementById('vDupWarn');
+  const list=document.getElementById('vDupWarnList');
+  if(matches.length>0){
+    warn.style.display='block';
+    list.innerHTML=matches.map(v=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed rgba(255,255,255,.1);">
+      <span style="font-size:14px;">&#127978;</span>
+      <div><div style="font-weight:600;">${v.shopName}</div>
+      <div style="color:var(--muted);font-size:10px;">${v.ownerName} &bull; <span style="color:${v.status==='approved'?'var(--ok)':'var(--warn)'};">${v.status==='approved'?'Active':'Pending'}</span></div>
+      </div></div>`).join('');
+  } else {
+    warn.style.display='none';
+  }
+}
+
+// PHONE INPUT in login — show duplicate account selector
+function onVPhoneInput(v){
+  const clean=v.trim().replace(/\D/g,'');
+  if(clean.length<10){
+    document.getElementById('vDupBox').style.display='none';
+    return;
+  }
+  const matches=vendors.filter(x=>x.phone&&x.phone.replace(/\D/g,'')===clean);
+  const dupBox=document.getElementById('vDupBox');
+  const dupList=document.getElementById('vDupList');
+  if(matches.length>1){
+    dupBox.style.display='block';
+    dupList.innerHTML=matches.map(v=>`
+      <div onclick="selectVendorAccount('${v.id}')" id="vAcc_${v.id}"
+        style="background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:10px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--sky2));display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:#fff;flex-shrink:0;">${v.shopName[0].toUpperCase()}</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:13px;color:var(--text);">${v.shopName}</div>
+          <div style="font-size:11px;color:var(--muted);">${v.ownerName}</div>
+          <div style="font-size:10px;font-weight:700;color:${v.status==='approved'?'var(--ok)':v.status==='pending'?'var(--warn)':'var(--err)'};">
+            ${v.status==='approved'?'&#9989; Active':v.status==='pending'?'&#9203; Pending':'&#10060; Rejected'}
+          </div>
+        </div>
+        <span style="font-size:18px;color:var(--border);">&#9654;</span>
+      </div>`).join('');
+  } else if(matches.length===1){
+    dupBox.style.display='none';
+  } else {
+    dupBox.style.display='none';
+  }
+}
+
+let selectedVendorId=null;
+
+function selectVendorAccount(id){
+  selectedVendorId=id;
+  document.querySelectorAll('[id^="vAcc_"]').forEach(el=>{
+    el.style.borderColor='var(--border)';
+    el.style.background='var(--bg3)';
+  });
+  const el=document.getElementById('vAcc_'+id);
+  if(el){el.style.borderColor='var(--sky)';el.style.background='var(--bg2)';}
+  toast('Account select ho gaya!','info');
+}
+
+// SIMPLE LOGIN — no password
+
+
+// SHOW PENDING BOX with notification
+function showPendingBox(vendor){
+  document.getElementById('vLoginForm').style.display='none';
+  const pb=document.getElementById('vPendingBox');
+  pb.style.display='block';
+  const msg=document.getElementById('vPendingMsg');
+  const pid=document.getElementById('vPendingId');
+  if(msg)msg.innerHTML=`<b style="color:var(--sky2);">${vendor.shopName}</b> ki request admin ke paas gayi hai.<br/>Approve hone par seedha login ho jaayega.`;
+  if(pid)pid.textContent='VND-'+(vendor.id||'---');
+}
+
+// CHECK APPROVAL STATUS
+async function checkApprovalStatus(){
+  const phone=(document.getElementById('vLPhone').value||'').trim().replace(/\D/g,'');
+  if(!phone){toast('Phone number daalen pehle!','err');return;}
+  try{
+    const r=await apiPost({action:'vendorLoginByPhone',phone});
+    if(r.ok&&r.vendor){
+      const v=r.vendor;
+      if(v.status==='approved'){
+        // APPROVED!
+        document.getElementById('vPendingBox').style.display='none';
+        curVendor=v;renderVendorView();
+        toast('Aapki dukaan approve ho gayi! Welcome '+v.shopName+'!','ok');
+      } else if(v.status==='rejected'){
+        document.getElementById('vPendingMsg').innerHTML='<b style="color:var(--err);">Rejected</b> — Admin se contact karein: zpioxw@gmail.com';
+      } else {
+        toast('Abhi pending hai. Thodi der baad check karein.','info');
+      }
+    }
+  }catch(e){
+    // Check in loaded vendors
+    await loadAll();
+    const v=vendors.find(x=>x.phone&&x.phone.replace(/\D/g,'')===phone);
+    if(v&&v.status==='approved'){
+      document.getElementById('vPendingBox').style.display='none';
+      curVendor=v;renderVendorView();
+      toast('Aapki dukaan approve ho gayi!','ok');
+    } else {
+      toast('Abhi pending hai. Internet check karein.','info');
+    }
+  }
+}
+
+// VENDOR REGISTER — no password, real name becomes account name
+async function vendorRegister(){
+  const shop  =document.getElementById('vRShop').value.trim();
+  const owner =document.getElementById('vROwner').value.trim();
+  const phone =document.getElementById('vRPhone').value.trim();
+  const email =document.getElementById('vREmail').value.trim();
+  const pin6  =document.getElementById('vRPin6').value.trim();
+  const type  =document.getElementById('vRType').value;
+
+  if(!shop) {toast('Dukaan ka naam daalen!','err');return;}
+  if(!owner){toast('Aapka naam daalen — yahi account name banega!','err');return;}
+  if(!phone){toast('Phone daalen!','err');return;}
+
+  try{
+    const r=await apiPost({
+      action:'addVendor',
+      shopName:shop,
+      ownerName:owner,       // Real name → account name
+      phone:phone.replace(/\D/g,''),
+      email:email||'',
+      pincode:pin6,
+      area:city(pin6)||'',
+      shopType:type,
+      pin:'NILL',            // No PIN
+      status:'pending'
+    });
+    if(!r.ok){toast(r.msg||'Error! Dobara try karein.','err');return;}
+
+    // Save locally for pending notification
+    localStorage.setItem('zpx_vPending_'+phone.replace(/\D/g,''),JSON.stringify({shop,owner,phone,type}));
+
+    // Show success
+    ['vRegForm'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
+    const rs=document.getElementById('vRegSuccess');if(rs)rs.style.display='block';
+
+    // Clear form
+    ['vRShop','vROwner','vRPhone','vREmail','vRPin6'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    document.getElementById('vDupWarn').style.display='none';
+
+  }catch(e){
+    // Offline — save locally
+    localStorage.setItem('zpx_vPending_'+phone.replace(/\D/g,''),JSON.stringify({shop,owner,phone,type,offline:true}));
+    const rs=document.getElementById('vRegSuccess');if(rs)rs.style.display='block';
+    const rf=document.getElementById('vRegForm');if(rf)rf.style.display='none';
+    toast('Internet nahi — request locally save ho gayi.','info');
+  }
+}
+
+
+function toggleHamburger(){
+  const m=document.getElementById('hamMenu');
+  const o=document.getElementById('hamOverlay');
+  if(!m)return;
+  const isOpen = m.style.right==='0px';
+  m.style.right = isOpen ? '-240px' : '0px';
+  o.style.display = isOpen ? 'none' : 'block';
+  document.body.style.overflow = isOpen ? '' : 'hidden';
+  // Update theme label
+  const th=document.getElementById('hamTheme');
+  if(th){const isDark=document.documentElement.getAttribute('data-theme')==='dark';th.innerHTML=(isDark?'&#9790; Dark Mode':'&#9728; Light Mode');}
+}
+function closeHamburger(){
+  const m=document.getElementById('hamMenu');
+  if(m)m.style.right='-240px';
+  const o=document.getElementById('hamOverlay');
+  if(o)o.style.display='none';
+  document.body.style.overflow='';
+}
+
+
+// ── HELP CHAT BOX ──
+function openChatBox(){
+  closeProfile();
+  const bg = document.getElementById('chatBg');
+  bg.style.display = 'flex';
+  const msgs = document.getElementById('chatMessages');
+  if(!msgs.innerHTML.trim()){
+    addChatMsg('bot','Namaste! &#128075; Kya problem hai? Main help karunga. Apna sawaal likhein.');
+  }
+  document.getElementById('chatInp').focus();
+}
+function closeChatBox(){
+  document.getElementById('chatBg').style.display='none';
+}
+function addChatMsg(who, text){
+  const msgs = document.getElementById('chatMessages');
+  const isBot = who==='bot';
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;justify-content:${isBot?'flex-start':'flex-end'};`;
+  div.innerHTML = `<div style="max-width:80%;padding:9px 13px;border-radius:${isBot?'4px 14px 14px 14px':'14px 4px 14px 14px'};background:${isBot?'var(--bg3)':'var(--sky)'};color:${isBot?'var(--text)':'#fff'};font-size:12px;line-height:1.5;">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+async function sendChatMsg(){
+  const inp = document.getElementById('chatInp');
+  const msg = inp.value.trim();
+  if(!msg) return;
+  inp.value = '';
+  addChatMsg('user', msg);
+  // Auto-reply
+  setTimeout(()=>{
+    const replies = [
+      'Aapki baat samajh aayi. Hum jald hi contact karenge. &#128231; zpioxw@gmail.com pe bhi likh sakte hain.',
+      'Dhanyavaad! Aapka message admin tak pahunch gaya.',
+      'Koi aur sawaal ho to zaroor puchen. Hum 24 ghante mein reply karte hain.',
+      'Agar urgent ho to seedha WhatsApp karein. Admin jald reply karega.',
+    ];
+    const r = replies[Math.floor(Math.random()*replies.length)];
+    addChatMsg('bot', r);
+    // Try to send to sheets
+    apiPost({action:'addHelpMsg',msg,name:localStorage.getItem('zpx_cName')||'Customer',phone:localStorage.getItem('zpx_cPhone')||''}).catch(()=>{});
+  }, 800);
+}
+
+
+async function refreshAdmin(){
+  const btn = document.querySelector('[onclick="refreshAdmin()"]');
+  if(btn){btn.style.animation='spin 1s linear infinite';btn.style.transformOrigin='center';}
+  toast('Refresh ho raha hai...','info');
+  await loadAll();
+  renderAdmin();
+  if(btn)btn.style.animation='';
+  toast('Refresh ho gaya!','ok');
+}
+
+</script>
+</body>
+</html>
